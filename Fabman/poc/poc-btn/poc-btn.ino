@@ -9,7 +9,8 @@ Adafruit_MCP23X17 mcp;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Test Suite");
+    Serial.println("FABMAN hardware reverse engenering");
+    Serial.println("POC : buttons");
     Wire.begin();
 
     if (!mcp.begin_I2C(0x20)) {
