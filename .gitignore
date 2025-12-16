@@ -2,4 +2,5 @@
 **/node_modules
 **/dist
 **/.DS_Store
-Fabman/dev_kit_encolsure/fabman_dev_kit-main-case.3mf
+*.3mf
+*.FCBak
