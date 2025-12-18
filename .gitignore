@@ -1,7 +1,2 @@
-.env
-**/node_modules
-**/dist
 **/.DS_Store
-*.3mf
-*.FCBak
 Fabman/reverse/reverse_fabman/reverse_fabman-backups
