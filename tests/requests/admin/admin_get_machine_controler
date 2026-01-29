@@ -1,7 +1,0 @@
-echo To approve
-curl -k -X GET https://localhost:3000/web-api/ofc_admin/get_machine_controler_list_to_approve
-
-echo
-echo
-echo Approved
-curl -k -X GET https://localhost:3000/web-api/ofc_admin/get_machine_controler_list_approved

@@ -1,1 +1,0 @@
-curl -k -X POST -d '{"uuid":"918688ab-2a83-4832-b4e3-400034f6d8f9"}' https://localhost:3000/web-api/ofc_admin/approve_machine_controler
