@@ -1,7 +1,17 @@
 .env
+
+# Firmware artefact and compiler
+machine_controler/firmware/build
+machine_controler/firmware/bin
+
+# Freecad
+*.3mf
+*.FCBak
+
+# Kicad
+Fabman/reverse/reverse_fabman/reverse_fabman-backups
+
+# Other
 **/node_modules
 **/dist
 **/.DS_Store
-*.3mf
-*.FCBak
-Fabman/reverse/reverse_fabman/reverse_fabman-backups
