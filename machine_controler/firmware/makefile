@@ -3,9 +3,17 @@ compile:
 	./bin/arduino-cli compile --fqbn esp32:esp32:esp32da . --build-path ./build
 
 upload:
-	./bin/arduino-cli upload --input-dir ./build -p "$(shell ./bin/arduino-cli board list | head -n 2 | tail -n 1 | awk '{print $$1}')" --fqbn esp32:esp32:esp32da .
+	@if [ -z "$(PORT)" ]; then \
+		echo "Available ports:"; \
+		./bin/arduino-cli board list | tail -n +2 | awk '{print $$1}' | nl; \
+		read -p "Port number: " n; \
+		port=$$(./bin/arduino-cli board list | tail -n +2 | awk '{print $$1}' | sed -n "$$n p"); \
+	else \
+		port="$(PORT)"; \
+	fi; \
+	./bin/arduino-cli upload --input-dir ./build -p "$$port" --fqbn esp32:esp32:esp32da .
 
-install_arduinocli_linux:
+install_arduinocli_linux_macos:
 	curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
 	./bin/arduino-cli core update-index
 	./bin/arduino-cli core install esp32:esp32

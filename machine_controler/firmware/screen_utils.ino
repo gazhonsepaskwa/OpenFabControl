@@ -68,6 +68,6 @@ void draw_title(char* msg) {
 void draw_center_background(uint8_t r, uint8_t g, uint8_t b) {
     tft.fillRect(0,  23, 320, 167, tft.color565(r, g, b));
 }
-void clear_screen(Adafruit_ILI9341& tft) {
+void clear_screen(void) {
     tft.fillScreen(ILI9341_BLACK);
 }

@@ -21,5 +21,5 @@ enum Event {
 // 'preferences' keys
 #define SETUP_COMPLETED_KEY     "setup_completed"
 
-void select_menu(Adafruit_ILI9341& tft, QRCodeGFX& qr, Menu& menu, Event button);
+void select_menu(QRCodeGFX& qr, Menu& menu, Event button);
 bool setup_process(Preferences& preferences);

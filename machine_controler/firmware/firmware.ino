@@ -116,7 +116,7 @@ void setup() {
     preferences.end();
 
     // start the interface
-    select_menu(tft, qr, menu, EVENT_ANY);
+    select_menu(qr, menu, EVENT_ANY);
 }
 
 void loop() {
@@ -129,7 +129,7 @@ void loop() {
         while (btnL_state == LOW) {
             btnL_state = mcp2.digitalRead(BTN_L);
         }
-        select_menu(tft, qr, menu, EVENT_BTN_LEFT);
+        select_menu(qr, menu, EVENT_BTN_LEFT);
     }
 
     // RIGHT BTN EVENT
@@ -138,7 +138,7 @@ void loop() {
         while (btnR_state == LOW) {
             btnR_state = mcp2.digitalRead(BTN_R);
         }
-        select_menu(tft, qr, menu, EVENT_BTN_RIGHT);
+        select_menu(qr, menu, EVENT_BTN_RIGHT);
     }
 
     // CARD EVENT
@@ -149,7 +149,7 @@ void loop() {
         Serial.println("todo : msg remove card");
         nfc.waitForTagRemoval();
         // to do : get the card info
-        select_menu(tft, qr, menu, EVENT_CARD);
+        select_menu(qr, menu, EVENT_CARD);
     }
     nfc.reset();
 }
