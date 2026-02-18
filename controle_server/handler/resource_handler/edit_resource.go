@@ -67,7 +67,7 @@ func Edit_resource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// build the querry
-	query := "UPDATE machine_controller SET " + set_close + fmt.Sprint(" WHERE uuid = $", i+1, ";")
+	query := "UPDATE resources SET " + set_close + fmt.Sprint(" WHERE uuid = $", i+1, ";")
 
 	// build parameters
 	params := []interface{}{}

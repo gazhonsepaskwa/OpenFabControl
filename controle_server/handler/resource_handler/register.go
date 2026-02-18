@@ -20,11 +20,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		TYPE string `json:"type"`
 	}
 
-	// validate payload data
-	if payload.TYPE != "fm-bv2" { // && payload.TYPE != "ofmc" && payload.TYPE != "toolsquare" // (future suport)
-		utils.Respond_error(w, "invalid payload: ", http.StatusBadRequest)
+	if utils.Extract_payload_data(r, w, &payload) != nil {
 		return
 	}
+
+	// validate payload data
 	if !utils.Validate_payload(payload.UUID == "", "uuid cannot be empty", w) {
 		return
 	}
@@ -39,12 +39,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `INSERT INTO machine_controller (uuid, type, zone, name, manual, price_booking_in_eur, price_usage_in_eur, approved) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	query := `INSERT INTO resources (uuid, type, zone, name, manual, price_booking_in_eur, price_usage_in_eur, approved) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	ON CONFLICT (uuid) DO NOTHING`
 
 	// Check if UUID already exists
 	var existingUUID string
-	err := database.Self.QueryRow(`SELECT uuid FROM machine_controller WHERE uuid = $1`, payload.UUID).Scan(&existingUUID)
+	err := database.Self.QueryRow(`SELECT uuid FROM resources WHERE uuid = $1`, payload.UUID).Scan(&existingUUID)
 	if err == nil {
 		// UUID already exists
 		utils.Respond_error(w, "UUID already registered", http.StatusBadRequest)
