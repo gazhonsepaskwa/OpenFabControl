@@ -1,5 +1,6 @@
 #include <Arduino.h>                // General purpose instructions
 #include <Wire.h>                   // I2C
+#include <WiFi.h>                   // before PN7150 (NdefMessage.h redefines WIFI_AUTH_OPEN)
 #include <Adafruit_MCP23X17.h>      // IO Expenders
 #include "Electroniccats_PN7150.h"  // NFC
 #include <cstdio>
@@ -95,7 +96,7 @@ void setup() {
     }
     // Read/Write mode as default
     if (nfc.configMode()) {
-        Serial.println("KO: failed to configure the mode");
+        Serial.println("KO: failed to configure the NFC mode");
         while (1);
     }
     // NCI Discovery mode
@@ -112,8 +113,6 @@ void setup() {
             ESP.restart();
         }
     }
-
-    preferences.end();
 
     // start the interface
     select_menu(qr, menu, EVENT_ANY);

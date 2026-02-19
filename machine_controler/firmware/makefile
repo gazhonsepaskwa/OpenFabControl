@@ -1,6 +1,6 @@
 compile:
 	 mkdir -p ./build
-	./bin/arduino-cli compile --fqbn esp32:esp32:esp32da . --build-path ./build
+	./bin/arduino-cli compile --fqbn esp32:esp32:esp32 . --build-path ./build
 
 upload:
 	@if [ -z "$(PORT)" ]; then \
@@ -11,7 +11,7 @@ upload:
 	else \
 		port="$(PORT)"; \
 	fi; \
-	./bin/arduino-cli upload --input-dir ./build -p "$$port" --fqbn esp32:esp32:esp32da .
+	./bin/arduino-cli upload --input-dir ./build -p "$$port" --fqbn esp32:esp32:esp32 .
 
 install_arduinocli_linux_macos:
 	curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh

@@ -11,7 +11,7 @@ extern Adafruit_ILI9341 tft;
 
 void draw_scan_card_no_reservation(QRCodeGFX& qr, Menu& menu) {
     clear_screen();
-    draw_title("Zone Metal : TIG");
+    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_center_background(100, 255, 100);
     draw_button_left("Manual");
 
@@ -26,15 +26,15 @@ void draw_scan_card_no_reservation(QRCodeGFX& qr, Menu& menu) {
 }
 void draw_machine_info(QRCodeGFX& qr, Menu& menu) {
     clear_screen();
+    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("<- Back");
-    printTFT("Zone Metal : TIG", 5, 3, tft.color565(255, 255, 255), 2);
     printTFTcentered( "User Manual",   tft.color565(0, 0, 0), 2, 0, 150, 160, 30);
     qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 150, 100);
     menu = MACHINE_INFO;
 }
 void draw_machine_usage(Menu& menu) {
     clear_screen();
-    draw_title("Zone Metal : TIG");
+    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("Add time");
     draw_button_right("Finish", 255, 100, 100);
     printTFTcentered( "Time Left:", tft.color565(255, 255, 255), 2, 0, 70, 160, 30);
@@ -45,7 +45,7 @@ void draw_machine_usage(Menu& menu) {
 }
 void draw_confirm_finish(Menu& menu) {
     clear_screen();
-    draw_title("Zone Metal : TIG");
+    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("<- Back");
     draw_button_right("Confirm", 255, 100, 100);
     printTFTcentered("Finish session early ?", tft.color565(255, 100, 100), 2, 0, 23, 320, 167);
