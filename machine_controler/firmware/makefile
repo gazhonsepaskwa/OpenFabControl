@@ -25,5 +25,6 @@ install_lib:
 	./bin/arduino-cli lib install "Adafruit GFX Library"
 	./bin/arduino-cli lib install "Adafruit ILI9341"
 	./bin/arduino-cli lib install "QRCodeGFX"
+	./bin/arduino-cli lib install "ArduinoJson"
 
 setup: install_arduinocli_linux install_lib

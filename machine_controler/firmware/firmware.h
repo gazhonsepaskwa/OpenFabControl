@@ -29,7 +29,7 @@ enum Event {
 #define WIFI_STA_PASS_KEY      "wifi_sta_pass"
 #define MACHINE_NAME_KEY       "machine_name"
 #define UUID_KEY               "uuid"
-#define MACHINE_API_HOST_KEY   "machine_api_host"
+#define MACHINE_API_HOST_KEY   "api_host"  /* NVS key max 15 chars */
 
 // backend port (host from setup form)
 #define MACHINE_API_PORT       4080
@@ -44,3 +44,4 @@ struct SetupFormData {
 
 void select_menu(QRCodeGFX& qr, Menu& menu, Event button);
 bool setup_process(Preferences& preferences);
+bool approved_by_admin(Preferences& preferences);

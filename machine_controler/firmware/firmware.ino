@@ -107,12 +107,42 @@ void setup() {
     preferences.begin("settings", false); // false => read & write
 
     // Setup process if settings not saved
+    Serial.print("Setup process... ");
     if (!preferences.getBool(SETUP_COMPLETED_KEY)) {
         if (!setup_process(preferences)) {
             preferences.end();
             ESP.restart();
         }
     }
+    Serial.println("OK");
+
+    // Connect to WiFi
+    String sta_ssid = preferences.getString(WIFI_STA_SSID_KEY, "");
+    String sta_pass = preferences.getString(WIFI_STA_PASS_KEY, "");
+    if (sta_ssid.length() > 0) {
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
+        unsigned long start = millis();
+        while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000)
+            delay(200);
+    }
+
+    // wait for server to approve the machine
+    Serial.print("Approved...       ");
+    int first_time = true;
+    while (!approved_by_admin(preferences)) {
+        if (first_time) {
+            first_time = false;
+            clear_screen();
+            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+            draw_center_background(60, 60, 120);
+            printTFTcentered("Waiting for approval...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+            printTFTcentered("Please go to admin panel", tft.color565(255, 255, 255), 2, 0, 100, 320, 30);
+            printTFTcentered("and approve the machine.", tft.color565(255, 255, 255), 2, 0, 130, 320, 30);
+        }
+        delay(5000);
+    }
+    Serial.println("OK");
 
     // start the interface
     select_menu(qr, menu, EVENT_ANY);
