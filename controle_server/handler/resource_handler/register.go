@@ -24,6 +24,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
 	// validate payload data
 	if !utils.Validate_payload(payload.UUID == "", "uuid cannot be empty", w) {
 		return
