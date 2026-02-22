@@ -8,6 +8,12 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
   Snackbar,
   Stack,
   Table,
@@ -22,6 +28,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SecurityIcon from '@mui/icons-material/Security';
 import { useEffect, useState } from 'react';
 
 const API_BASE = '/web-admin-api';
@@ -36,9 +43,13 @@ interface User {
   tva: string;
   facturation_address: string;
   facturation_account: string;
-  activation_code: string;
   status: string;
   created_at: string;
+}
+
+interface Role {
+  id: number;
+  name: string;
 }
 
 function UsersPanel() {
@@ -52,6 +63,12 @@ function UsersPanel() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState({ open: false, userId: '' });
+  const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
+  const [userRoles, setUserRoles] = useState<Role[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [selectedUserForRoles, setSelectedUserForRoles] = useState<string | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -137,11 +154,11 @@ function UsersPanel() {
     if (!editingUser) return;
 
     try {
-      const { created_at, password, status, activation_code, ...userToUpdate } = editingUser;
+      const { created_at, password, status, ...userToUpdate } = editingUser;
       const res = await fetch(`${API_BASE}/update_user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...userToUpdate, id: String(userToUpdate.id) }),
+        body: JSON.stringify({ ...userToUpdate }),
       });
 
       if (res.ok) {
@@ -173,7 +190,7 @@ function UsersPanel() {
       const res = await fetch(`${API_BASE}/delete_user`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: String(deleteConfirmDialog.userId) }),
+        body: JSON.stringify({ user_id: deleteConfirmDialog.userId }),
       });
 
       if (res.ok) {
@@ -192,6 +209,125 @@ function UsersPanel() {
 
   const handleCancelDelete = () => {
     setDeleteConfirmDialog({ open: false, userId: '' });
+  };
+
+  const handleOpenRolesDialog = async (userId: string) => {
+    setSelectedUserForRoles(userId);
+    setRolesLoading(true);
+    setUserRoles([]);
+    setSelectedRoleId('');
+    setRolesDialogOpen(true);
+
+    try {
+      const [rolesRes, availableRes] = await Promise.all([
+        fetch(`${API_BASE}/get_user_roles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId }),
+        }),
+        fetch(`${API_BASE}/get_role_list`),
+      ]);
+
+      if (rolesRes.ok) {
+        const data = await rolesRes.json();
+        setUserRoles(data || []);
+      } else {
+        throw new Error('Failed to fetch user roles');
+      }
+
+      if (availableRes.ok) {
+        const availableData = await availableRes.json();
+        setAvailableRoles(availableData || []);
+      } else {
+        throw new Error('Failed to fetch available roles');
+      }
+    } catch (err) {
+      const errorMsg = 'Failed to fetch roles';
+      console.error(errorMsg, err);
+      setSnackbar({ open: true, message: `${errorMsg}: ${err instanceof Error ? err.message : 'Unknown error'}` });
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleCloseRolesDialog = () => {
+    setRolesDialogOpen(false);
+    setUserRoles([]);
+    setSelectedUserForRoles(null);
+    setAvailableRoles([]);
+    setSelectedRoleId('');
+  };
+
+  const handleAssignRole = async () => {
+    if (!selectedUserForRoles || !selectedRoleId) {
+      setSnackbar({ open: true, message: 'Please select a role' });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/assign_role_to_user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: selectedUserForRoles,
+          role_id: selectedRoleId,
+        }),
+      });
+
+      if (res.ok) {
+        setSelectedRoleId('');
+        // Refresh user roles
+        const rolesRes = await fetch(`${API_BASE}/get_user_roles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: selectedUserForRoles }),
+        });
+        if (rolesRes.ok) {
+          const data = await rolesRes.json();
+          setUserRoles(data || []);
+        }
+      } else {
+        throw new Error('API call failed');
+      }
+    } catch (err) {
+      const errorMsg = 'Failed to assign role';
+      console.error(errorMsg, err);
+      setSnackbar({ open: true, message: `${errorMsg}: ${err instanceof Error ? err.message : 'Unknown error'}` });
+    }
+  };
+
+  const handleRemoveRole = async (roleId: number) => {
+    if (!selectedUserForRoles) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/remove_role_from_user`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: selectedUserForRoles,
+          role_id: roleId,
+        }),
+      });
+
+      if (res.ok) {
+        // Refresh user roles
+        const rolesRes = await fetch(`${API_BASE}/get_user_roles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: selectedUserForRoles }),
+        });
+        if (rolesRes.ok) {
+          const data = await rolesRes.json();
+          setUserRoles(data || []);
+        }
+      } else {
+        throw new Error('API call failed');
+      }
+    } catch (err) {
+      const errorMsg = 'Failed to remove role';
+      console.error(errorMsg, err);
+      setSnackbar({ open: true, message: `${errorMsg}: ${err instanceof Error ? err.message : 'Unknown error'}` });
+    }
   };
 
   if (loading) {
@@ -257,9 +393,6 @@ function UsersPanel() {
                   <strong>Access Key</strong>
                 </TableCell>
                 <TableCell>
-                  <strong>Activation Code</strong>
-                </TableCell>
-                <TableCell>
                   <strong>Created At</strong>
                 </TableCell>
                 <TableCell>
@@ -279,8 +412,7 @@ function UsersPanel() {
                   <TableCell>{user.facturation_address || 'N/A'}</TableCell>
                   <TableCell>{user.facturation_account || 'N/A'}</TableCell>
                   <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.access_key}</TableCell>
-                  <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.activation_code || 'N/A'}</TableCell>
-                  <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                 <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <IconButton
                       size="small"
@@ -288,6 +420,13 @@ function UsersPanel() {
                       color="primary"
                     >
                       <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenRolesDialog(user.id)}
+                      color="info"
+                    >
+                      <SecurityIcon />
                     </IconButton>
                     <IconButton
                       size="small"
@@ -425,6 +564,74 @@ function UsersPanel() {
           <Button onClick={handleUpdateUser} variant="contained" color="primary">
             Update User
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* User roles dialog */}
+      <Dialog
+        open={rolesDialogOpen}
+        onClose={handleCloseRolesDialog}
+        aria-labelledby="roles-dialog-title"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="roles-dialog-title">Assigned Roles</DialogTitle>
+        <DialogContent>
+          {rolesLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', pt: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : userRoles.length === 0 ? (
+            <Typography sx={{ mt: 2 }}>No roles assigned to this user</Typography>
+          ) : (
+            <List sx={{ mt: 2 }}>
+              {userRoles.map((role) => (
+                <ListItem
+                  key={role.id}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => handleRemoveRole(role.id)}
+                      color="error"
+                      size="small"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+                  <ListItemText primary={role.name} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+          <Stack spacing={2} sx={{ mt: 4 }}>
+            <Typography variant="subtitle2">Assign a new role</Typography>
+            <Stack direction="row" spacing={2}>
+              <Select
+                value={selectedRoleId}
+                onChange={(e: SelectChangeEvent) => setSelectedRoleId(e.target.value)}
+                displayEmpty
+                fullWidth
+                size="small"
+              >
+                <MenuItem value="">
+                  <em>Select a role</em>
+                </MenuItem>
+                {availableRoles.map((role) => (
+                  <MenuItem key={role.id} value={role.id}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Button variant="contained" color="success" onClick={handleAssignRole}>
+                Add
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseRolesDialog}>Close</Button>
         </DialogActions>
       </Dialog>
 
