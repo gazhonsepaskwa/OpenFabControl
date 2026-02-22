@@ -1,5 +1,5 @@
 echo To approve
-curl -k -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImV4ZW1wbGVAZXhlbXBsZS5jb20iLCJleHAiOjE3Njg0NzkyOTYsIml6MTc2ODM5Mjg5Nn0.8OMNNanbYacwheLTT1TNUypqcE4I1AoYHveFt1jYECs" -X GET https://localhost:4080/web-admin-api/get_machine_controler_list_to_approve
+curl -k -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImV4ZW1wbGVAZXhlbXBsZS5jb20iLCJleHAiOjE3Njg0NzkyOTYsIml6MTc2ODM5Mjg5Nn0.8OMNNanbYacwheLTT1TNUypqcE4I1AoYHveFt1jYECs" -X GET https://localhost:4080/web-admin-api/get_resource_list_to_approve
 
 echo
 echo

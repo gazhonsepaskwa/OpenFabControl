@@ -25,7 +25,7 @@ func Delete_resource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := "DELETE FROM machine_controller WHERE uuid = $1"
+	query := "DELETE FROM resources WHERE uuid = $1"
 	result, err := database.Self.Exec(query, payload.UUID)
 	if err != nil {
 		utils.Respond_error(w, "Internal Server Error", http.StatusInternalServerError)

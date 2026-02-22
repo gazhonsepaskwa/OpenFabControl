@@ -26,7 +26,7 @@ func Approve_resource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set approved to true in the db
-	query := "UPDATE machine_controller SET approved = TRUE WHERE uuid = $1"
+	query := "UPDATE resources SET approved = TRUE WHERE uuid = $1"
 	result, err := database.Self.Exec(query, payload.UUID)
 	if err != nil {
 		utils.Respond_error(w, "Internal Server Error", http.StatusInternalServerError)

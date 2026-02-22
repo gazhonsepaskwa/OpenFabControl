@@ -28,9 +28,9 @@ func get_resource(w http.ResponseWriter, r *http.Request, approved bool) {
 	// get the controllers
 	query := ""
 	if approved {
-		query = "SELECT * FROM machine_controller WHERE approved = TRUE"
+		query = "SELECT * FROM resources WHERE approved = TRUE"
 	} else {
-		query = "SELECT * FROM machine_controller WHERE approved = FALSE"
+		query = "SELECT * FROM resources WHERE approved = FALSE"
 	}
 	var controllers []model.Machine_controller
 	rows, err := database.Self.Query(query)

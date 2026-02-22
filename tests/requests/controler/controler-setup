@@ -1,1 +1,1 @@
-curl -k -X POST -d '{"uuid":"918688ab-2a83-4832-b4e3-400034f6d8f9", "name":"TIG", "type":"fm-bv2" }' https://localhost:4080/machine-api/register
+curl -k -X POST -d '{"uuid":"918688ab-2a83-4812-b4e3-400034f6d8f9", "name":"TIG", "type":"fm-bv2" }' https://localhost:4080/machine-api/register
