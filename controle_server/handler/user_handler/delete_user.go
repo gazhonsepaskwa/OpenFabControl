@@ -12,12 +12,12 @@ func Delete_user(w http.ResponseWriter, r* http.Request) {
 	if utils.Reject_all_methode_exept(r, w, http.MethodDelete) != nil { return }
 
 	var payload struct {
-		USER_ID		string	`json:"user_id"`
+		USER_ID		int	`json:"user_id"`
 	}
 
 	if utils.Extract_payload_data(r, w, &payload) != nil { return }
 
-	if !utils.Validate_payload(payload.USER_ID == "", "user_id cannot be empty", w) { return }
+	if !utils.Validate_payload(payload.USER_ID == 0, "user_id cannot be empty", w) { return }
 
 	// delete the role from the db
 	query := `DELETE FROM users WHERE id = $1`
