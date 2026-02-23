@@ -1,0 +1,1 @@
+curl -k -X POST -H "Content-Type: application/json" -d '{"uuid":"08269f8c-cb47-444c-614a-4590aa2b5973"}' https://localhost:4080/machine-api/check_approval_status

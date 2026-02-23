@@ -126,5 +126,20 @@ func ensureTable() error {
 		return err
 	}
 
+	// create sessions table
+	create = `CREATE TABLE IF NOT EXISTS sessions (
+		id            SERIAL       PRIMARY KEY,
+		user_id       INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		resource_uuid TEXT         NOT NULL REFERENCES resources(uuid) ON DELETE CASCADE,
+		started_at    TIMESTAMPTZ  NOT NULL,
+		ended_at      TIMESTAMPTZ  NOT NULL,
+		time_used     INTEGER      NOT NULL DEFAULT 0,
+		status        VARCHAR(16)  NOT NULL CHECK (status IN ('planned','progress','done'))
+	);`
+	_, err = Self.Exec(create)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

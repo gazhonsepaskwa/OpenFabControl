@@ -1,1 +1,1 @@
-curl -k -X POST -d '{"email":"exemple@exemple.com", "access_key":"1234idk_the_format_by_hearth"}' https://localhost:4080/web-admin-api/create_user
+curl -k -X POST -d '{"email":"perso@nalebrun.be", "access_key":"B2B0B7BB"}' https://localhost:4080/web-admin-api/create_user

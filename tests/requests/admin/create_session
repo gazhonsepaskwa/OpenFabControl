@@ -1,0 +1,1 @@
+curl -k -X POST -H "Content-Type: application/json" -d '{"user_id":1, "resource_uuid":"064e7ca1-363b-4637-ffe9-fa8b32aa8c08", "started_at":"2026-02-25T10:00:00Z"}' https://localhost:4080/web-admin-api/create_session

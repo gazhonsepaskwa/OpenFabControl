@@ -43,6 +43,16 @@ type Role struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type Session struct {
+	ID           int       `json:"id"`
+	UserID       int       `json:"user_id"`
+	ResourceUUID string    `json:"resource_uuid"`
+	StartedAt    time.Time `json:"started_at"`
+	EndedAt      time.Time `json:"ended_at"`
+	TimeUsed     int       `json:"time_used"`
+	Status       string    `json:"status"`
+}
+
 //////////////
 // jwt auth //
 //////////////

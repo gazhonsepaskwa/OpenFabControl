@@ -1,1 +1,1 @@
-curl -k -X DELETE -d '{"uuid":"918688ab-2a83-4832-b4e3-400034f6d8f9"}' https://localhost:4080/web-admin-api/delete_resource
+curl -k -X DELETE -d '{"uuid":"89a9bb43-bc16-43e3-5a46-4fb7d4c00d3a"}' https://localhost:4080/web-admin-api/delete_resource

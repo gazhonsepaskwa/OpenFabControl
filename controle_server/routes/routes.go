@@ -3,6 +3,7 @@ package routes
 import (
 	"OpenFabControl/handler/resource_handler"
 	"OpenFabControl/handler/role_handler"
+	"OpenFabControl/handler/session_handler"
 	"OpenFabControl/handler/user_handler"
 	"fmt"
 	"net/http"
@@ -15,6 +16,10 @@ func Setup_routes() {
 	//////////////////////////////
 
 	http.HandleFunc("/machine-api/register", resource_handler.Register)
+	http.HandleFunc("/machine-api/check_approval_status", resource_handler.Check_approval_status)
+	http.HandleFunc("/machine-api/create_session", session_handler.Create_session)
+	http.HandleFunc("/machine-api/start_session", session_handler.Start_session)
+	http.HandleFunc("/machine-api/stop_session", session_handler.Stop_session)
 	http.HandleFunc("/machine-api/create_user", user_handler.Create_user)
 
 	///////////////////////
@@ -29,6 +34,7 @@ func Setup_routes() {
 	http.HandleFunc("/web-admin-api/approve_resource", resource_handler.Approve_resource)
 	http.HandleFunc("/web-admin-api/delete_resource", resource_handler.Delete_resource)
 	http.HandleFunc("/web-admin-api/edit_resource", resource_handler.Edit_resource)
+	http.HandleFunc("/web-admin-api/create_session", session_handler.Create_session)
 
 	// users
 	http.HandleFunc("/web-admin-api/create_user", user_handler.Create_user)
@@ -50,6 +56,7 @@ func Setup_routes() {
 	///////////////////////
 
 	http.HandleFunc("/web-user-api/user_one_time_setup", user_handler.User_one_time_setup)
+	http.HandleFunc("/web-user-api/create_session", session_handler.Create_session)
 	http.HandleFunc("/web-user-api/login", user_handler.Login)
 
 	///////////
