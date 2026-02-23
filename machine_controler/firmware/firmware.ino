@@ -1,6 +1,7 @@
 #include <Arduino.h>                // General purpose instructions
 #include <Wire.h>                   // I2C
 #include <WiFi.h>                   // before PN7150 (NdefMessage.h redefines WIFI_AUTH_OPEN)
+#include <time.h>
 #include <Adafruit_MCP23X17.h>      // IO Expenders
 #include "Electroniccats_PN7150.h"  // NFC
 #include <cstdio>
@@ -18,6 +19,11 @@ Electroniccats_PN7150   nfc(NFC_IRQ, -1, NFC_ADDR, PN7150); // VIN -> -1 since m
 
 // Settings
 Preferences             preferences;
+
+// Session (from start_session API)
+Session                 current_session = {};
+unsigned long           last_tick_ms = 0;
+char                    last_scanned_access_key[32] = {0};
 
 //other
 Menu menu = INIT; // enum
@@ -125,6 +131,7 @@ void setup() {
         unsigned long start = millis();
         while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000)
             delay(200);
+        configTime(0, 0, "pool.ntp.org");
     }
 
     // wait for server to approve the machine
@@ -175,10 +182,24 @@ void loop() {
         if (nfc.remoteDevice.hasMoreTags()) {
             Serial.println("todo: error msg for only one tag at the time");
         }
-        Serial.println("todo : msg remove card");
+        const unsigned char* uid = nfc.remoteDevice.getNFCID();
+        unsigned char uid_len = nfc.remoteDevice.getNFCIDLen();
+        // convert uid to string (hexa)
+        if (uid && uid_len > 0 && uid_len <= 15) {
+            for (unsigned char i = 0; i < uid_len; i++) {
+                snprintf(last_scanned_access_key + i * 2, 4, "%02X", uid[i]);
+            }
+            last_scanned_access_key[uid_len * 2] = '\0';
+        } else {
+            last_scanned_access_key[0] = '\0';
+        }
         nfc.waitForTagRemoval();
-        // to do : get the card info
         select_menu(qr, menu, EVENT_CARD);
+    }
+    // Update machine usage time display every second
+    else if (menu == MACHINE_USAGE && (millis() - last_tick_ms) >= 1000) {
+        update_machine_usage_times();
+        last_tick_ms = millis();
     }
     nfc.reset();
 }

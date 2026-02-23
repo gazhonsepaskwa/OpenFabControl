@@ -1,5 +1,7 @@
 #include <Adafruit_GFX.h>           // screen
 #include <Adafruit_ILI9341.h>       // screen
+#include <cstdio>
+#include <cstring>
 
 // External reference to global tft object defined in firmware.ino
 extern Adafruit_ILI9341 tft;
@@ -70,4 +72,12 @@ void draw_center_background(uint8_t r, uint8_t g, uint8_t b) {
 }
 void clear_screen(void) {
     tft.fillScreen(ILI9341_BLACK);
+}
+
+void format_hms(int total_sec, char* out, size_t out_size) {
+    if (total_sec < 0) total_sec = 0;
+    int h = total_sec / 3600;
+    int m = (total_sec % 3600) / 60;
+    int s = total_sec % 60;
+    snprintf(out, out_size, "%02d:%02d:%02d", h, m, s);
 }

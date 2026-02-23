@@ -42,6 +42,26 @@ struct SetupFormData {
     char api_host[129];
 };
 
+struct Session {
+    int id;
+    int user_id;
+    char resource_uuid[40];
+    int64_t started_at_unix;
+    int64_t ended_at_unix;
+    int time_used;
+    char status[16];
+};
+
+extern Session current_session;
+extern unsigned long last_tick_ms;
+
+bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg = nullptr, size_t err_size = 0);
+bool stop_session(const char* resource_uuid);
+void show_session_error(const char* msg);
+
+extern char last_scanned_access_key[32];
+
 void select_menu(QRCodeGFX& qr, Menu& menu, Event button);
+void update_machine_usage_times(void);
 bool setup_process(Preferences& preferences);
 bool approved_by_admin(Preferences& preferences);

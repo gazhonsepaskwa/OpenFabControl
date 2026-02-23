@@ -11,3 +11,4 @@ void draw_button_right(char* msg, uint8_t r, uint8_t g, uint8_t b);
 void draw_title(char* msg);
 void draw_center_background(uint8_t r, uint8_t g, uint8_t b);
 void clear_screen(void);
+void format_hms(int total_sec, char* out, size_t out_size);
