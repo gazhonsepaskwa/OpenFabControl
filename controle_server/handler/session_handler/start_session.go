@@ -24,7 +24,7 @@ func Start_session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.Validate_payload(payload.AccessKey == "", "access_key cannot be empty", w) {
+	if !utils.Validate_payload_no_msg(payload.AccessKey == "", "Unsuported badge type", w) {
 		return
 	}
 	if !utils.Validate_payload(payload.ResourceUUID == "", "resource_uuid cannot be empty", w) {
@@ -35,7 +35,7 @@ func Start_session(w http.ResponseWriter, r *http.Request) {
 	var userID int
 	err := database.Self.QueryRow("SELECT id FROM users WHERE access_key = $1", payload.AccessKey).Scan(&userID)
 	if err == sql.ErrNoRows {
-		utils.Respond_error(w, "User not found with this access_key", http.StatusNotFound)
+		utils.Respond_error(w, "Badge not registered", http.StatusNotFound)
 		return
 	}
 	if err != nil {

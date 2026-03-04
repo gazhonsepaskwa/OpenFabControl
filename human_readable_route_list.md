@@ -106,6 +106,26 @@ Stops the current session on a machine.
 
 ---
 
+### POST /machine-api/next_booking
+Returns the next (or current) booking for a machine. Used by the firmware to display "BOOKED by &lt;user_name&gt;" and time slot. No auth (like start_session).
+
+**Input (JSON):**
+| Parameter     | Type   | Required |
+|---------------|--------|----------|
+| resource_uuid | string | yes      |
+
+**Outputs:**
+| Code | Body                                                                 |
+|------|----------------------------------------------------------------------|
+| 200  | `{"next_booking":{ "start_at":"2025-01-01T15:30:00Z", "end_at":"2025-01-01T17:00:00Z", "user_name":"John Doe" }}` or `{"next_booking":null}` when none |
+| 400  | `{"error":"invalid payload: resource_uuid cannot be empty"}`          |
+| 405  | `{"error":"Method not allowed"}`                                      |
+| 500  | `{"error":"Internal Server Error"}`                                   |
+
+Dates are RFC3339 (firmware uses first 19 chars: `YYYY-MM-DDTHH:MM:SS`). `user_name` is truncated to 32 characters.
+
+---
+
 ### POST /machine-api/create_user
 Creates a user (same handler as admin).
 

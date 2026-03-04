@@ -46,3 +46,12 @@ func Validate_payload(condition bool, error_msg string, w http.ResponseWriter) b
 	}
 	return true
 }
+
+// helper to check a condition of the payload without pre error message
+func Validate_payload_no_msg(condition bool, error_msg string, w http.ResponseWriter) bool {
+	if condition {
+		Respond_error(w, error_msg, http.StatusBadRequest)
+		return false
+	}
+	return true
+}

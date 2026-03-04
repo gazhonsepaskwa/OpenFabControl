@@ -20,6 +20,7 @@ func Setup_routes() {
 	http.HandleFunc("/machine-api/create_session", session_handler.Create_session)
 	http.HandleFunc("/machine-api/start_session", session_handler.Start_session)
 	http.HandleFunc("/machine-api/stop_session", session_handler.Stop_session)
+	http.HandleFunc("/machine-api/next_booking", session_handler.Next_booking)
 	http.HandleFunc("/machine-api/create_user", user_handler.Create_user)
 
 	///////////////////////
