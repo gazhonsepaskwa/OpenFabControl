@@ -14,6 +14,7 @@
 // component objects declaration
 Adafruit_MCP23X17       mcp1;
 Adafruit_MCP23X17       mcp2;
+#include "utils.h"
 Adafruit_ILI9341        tft(TFT_CS, TFT_DC, TFT_RST); // default VSPI bus
 Electroniccats_PN7150   nfc(NFC_IRQ, -1, NFC_ADDR, PN7150); // VIN -> -1 since managed externally
 
@@ -25,8 +26,12 @@ Session                 current_session = {};
 unsigned long           last_tick_ms = 0;
 char                    last_scanned_access_key[32] = {0};
 
-//other
-Menu menu = INIT; // enum
+// Next booking info
+NextBooking             next_booking = {};
+unsigned long           last_next_booking_refresh_ms = 0;
+
+// Other
+Menu menu = INIT;  // enum
 QRCodeGFX qr(tft);
 
 void setup() {
@@ -57,6 +62,14 @@ void setup() {
     }
     Serial.println("OK");
 
+    // Relay init
+    Serial.print("Relay init...    ");
+    mcp1.pinMode(RELAY1, OUTPUT);
+    mcp1.digitalWrite(RELAY1, LOW);
+    mcp1.pinMode(RELAY2, OUTPUT);
+    mcp1.digitalWrite(RELAY2, LOW);
+    Serial.println("OK");
+
     // Buttons init
     Serial.print("Button init...   ");
     mcp2.pinMode(BTN_L, INPUT);
@@ -71,6 +84,7 @@ void setup() {
     // Buzzer
     Serial.print("Buzzer init...   ");
     mcp1.pinMode(BUZZER, OUTPUT);
+    mcp1.digitalWrite(BUZZER, LOW);
     Serial.println("OK");
 
     // Screen init
@@ -131,6 +145,7 @@ void setup() {
         unsigned long start = millis();
         while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000)
             delay(200);
+        setenv("TZ", TZ_STRING, 1);
         configTime(0, 0, "pool.ntp.org");
     }
 
@@ -151,13 +166,42 @@ void setup() {
     }
     Serial.println("OK");
 
+    // initial fetch of next booking (best effort)
+    fetch_next_booking(&next_booking);
+    last_next_booking_refresh_ms = millis();
+
     // start the interface
     select_menu(qr, menu, EVENT_ANY);
+}
+
+void refresh_next_booking_if_needed(void) {
+    unsigned long now_ms = millis();
+    if ((now_ms - last_next_booking_refresh_ms) < NEXT_BOOKING_REFRESH_INTERVAL_MS) {
+        return;
+    }
+    if (fetch_next_booking(&next_booking)) {
+        last_next_booking_refresh_ms = now_ms;
+        // If we are on the scan card screen, redraw it to reflect updated booking info
+        if (menu == SCAN_CARD) {
+            draw_scan_card(qr, menu);
+        }
+    }
+}
+
+void force_refresh_next_booking(void) {
+    if (fetch_next_booking(&next_booking)) {
+        last_next_booking_refresh_ms = millis();
+    }
 }
 
 void loop() {
     bool btnL_state = mcp2.digitalRead(BTN_L);
     bool btnR_state = mcp2.digitalRead(BTN_R);
+
+    // Periodic refresh of next booking info while on scan card screen
+    if (menu == SCAN_CARD) {
+        refresh_next_booking_if_needed();
+    }
 
     // LEFT BTN EVENT
     if (btnL_state == LOW) {

@@ -8,7 +8,7 @@
 
 enum Menu {
     INIT,
-    SCAN_CARD_NO_RESERVATION,
+    SCAN_CARD,
     MACHINE_INFO,
     MACHINE_USAGE,
     CONFIRM_FINISH
@@ -20,6 +20,14 @@ enum Event {
     EVENT_CARD,
     EVENT_ANY
 };
+
+// Refresh interval (in minutes) for fetching next booking info
+#define NEXT_BOOKING_REFRESH_MINUTES       1
+#define NEXT_BOOKING_REFRESH_INTERVAL_MS   ((unsigned long)NEXT_BOOKING_REFRESH_MINUTES * 60UL * 1000UL)
+
+// Timezone for NTP and display (POSIX TZ string)
+// Examples: "CET-1CEST,M3.5.0,M10.5.0/3" (Europe/Paris), "UTC0", "EST5EDT,M3.2.0,M11.1.0"
+#define TZ_STRING   "CET-1CEST,M3.5.0,M10.5.0/3"
 
 // 'preferences' keys
 #define SETUP_COMPLETED_KEY     "setup_completed"
@@ -52,16 +60,36 @@ struct Session {
     char status[16];
 };
 
-extern Session current_session;
-extern unsigned long last_tick_ms;
+struct NextBooking {
+    bool has_booking;
+    int64_t start_unix;
+    int64_t end_unix;
+    char user_name[33];
+};
 
+extern Session current_session;
+extern NextBooking next_booking;
+extern unsigned long last_tick_ms;
+extern unsigned long last_next_booking_refresh_ms;
+
+// sessions.ino
 bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg = nullptr, size_t err_size = 0);
 bool stop_session(const char* resource_uuid);
 void show_session_error(const char* msg);
+bool fetch_next_booking(NextBooking* out);
 
 extern char last_scanned_access_key[32];
 
+// select_menu
 void select_menu(QRCodeGFX& qr, Menu& menu, Event button);
 void update_machine_usage_times(void);
+void draw_machine_usage(Menu& menu);
+void draw_confirm_finish(Menu& menu);
+
+// firmware.ino helpers
+void refresh_next_booking_if_needed(void);
+void force_refresh_next_booking(void);
+
+// setup_process
 bool setup_process(Preferences& preferences);
 bool approved_by_admin(Preferences& preferences);

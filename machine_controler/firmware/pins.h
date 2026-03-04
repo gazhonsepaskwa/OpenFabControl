@@ -22,5 +22,9 @@
 // led
 #define LED 2
 
+// relay
+#define RELAY1 10 // MCP1
+#define RELAY2 11 // MCP1
+
 // buzzer
 #define BUZZER 14 // MCP1

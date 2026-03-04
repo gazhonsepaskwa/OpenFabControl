@@ -4,13 +4,17 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <time.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "firmware.h"
 #include "screen_utils.h"
 
 extern Adafruit_ILI9341 tft;
 
-static int64_t rfc3339_to_unix(const char* s) {
+// Parse RFC3339 datetime from API (assumed UTC, e.g. "2025-03-04T13:30:00Z")
+// Returns unix timestamp so that localtime_r() gives correct local time for display (Belgium, etc.)
+static int64_t rfc3339_utc_to_unix(const char* s) {
     if (!s || strlen(s) < 19) return 0;
     int y, mo, d, h, mi, sec;
     if (sscanf(s, "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &h, &mi, &sec) != 6)
@@ -22,7 +26,19 @@ static int64_t rfc3339_to_unix(const char* s) {
     tm.tm_hour = h;
     tm.tm_min = mi;
     tm.tm_sec = sec;
-    return (int64_t)mktime(&tm);
+    // Interpret tm as UTC: temporarily set TZ to UTC so mktime() returns correct unix time
+    char tz_prev[64] = "UTC0";
+    const char* env_tz = getenv("TZ");
+    if (env_tz) {
+        strncpy(tz_prev, env_tz, sizeof(tz_prev) - 1);
+        tz_prev[sizeof(tz_prev) - 1] = '\0';
+    }
+    setenv("TZ", "UTC0", 1);
+    tzset();
+    time_t t = mktime(&tm);
+    setenv("TZ", tz_prev, 1);
+    tzset();
+    return (int64_t)t;
 }
 
 bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg, size_t err_size) {
@@ -73,8 +89,8 @@ bool start_session(const char* access_key, const char* resource_uuid, Session* o
 
     const char* started = sess["started_at"].as<const char*>();
     const char* ended = sess["ended_at"].as<const char*>();
-    out->started_at_unix = rfc3339_to_unix(started);
-    out->ended_at_unix = rfc3339_to_unix(ended);
+    out->started_at_unix = rfc3339_utc_to_unix(started);
+    out->ended_at_unix = rfc3339_utc_to_unix(ended);
     out->time_used = sess["time_used"].as<int>();
 
     String st = sess["status"].as<String>();
@@ -100,6 +116,75 @@ bool stop_session(const char* resource_uuid) {
     http.end();
 
     return (code >= 200 && code < 300);
+}
+
+bool fetch_next_booking(NextBooking* out) {
+    if (!out) return false;
+
+    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
+    if (host.length() == 0) {
+        out->has_booking = false;
+        return false;
+    }
+
+    String resource_uuid = preferences.getString(UUID_KEY, "");
+    if (resource_uuid.length() == 0) {
+        out->has_booking = false;
+        return false;
+    }
+
+    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/next_booking";
+    String body = "{\"resource_uuid\":\"" + resource_uuid + "\"}";
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+    http.begin(client, url);
+    http.addHeader("Content-Type", "application/json");
+    int code = http.POST(body);
+
+    if (code < 200 || code >= 300) {
+        http.end();
+        out->has_booking = false;
+        return false;
+    }
+
+    String payload = http.getString();
+    http.end();
+
+    JsonDocument doc;
+    if (deserializeJson(doc, payload)) {
+        out->has_booking = false;
+        return false;
+    }
+
+    if (!doc.containsKey("next_booking") || doc["next_booking"].isNull()) {
+        out->has_booking = false;
+        return true; // no future booking, but not an error
+    }
+
+    JsonObject nb = doc["next_booking"];
+
+    const char* start_s = nb["start_at"].as<const char*>();
+    const char* end_s = nb["end_at"].as<const char*>();
+    const char* user_s = nb["user_name"].as<const char*>();
+
+    out->start_unix = rfc3339_utc_to_unix(start_s);
+    out->end_unix = rfc3339_utc_to_unix(end_s);
+    if (user_s) {
+        strncpy(out->user_name, user_s, sizeof(out->user_name) - 1);
+        out->user_name[sizeof(out->user_name) - 1] = '\0';
+    } else {
+        out->user_name[0] = '\0';
+    }
+
+    if (out->start_unix <= 0 || out->end_unix <= 0 || out->end_unix <= out->start_unix) {
+        out->has_booking = false;
+        return true;
+    }
+
+    out->has_booking = true;
+    return true;
 }
 
 void show_session_error(const char* msg) {
