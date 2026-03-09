@@ -15,7 +15,7 @@ func Update_user(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		ID                  string `json:"id"`
+		ID                  int `json:"id"`
 		ACCESS_KEY          string `json:"access_key"`
 		EMAIL               string `json:"email"`
 		FIRST_NAME          string `json:"first_name"`
@@ -29,7 +29,7 @@ func Update_user(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.Validate_payload(payload.ID == "", "id cannot be empty", w) {
+	if !utils.Validate_payload(payload.ID == 0, "id cannot be empty", w) {
 		return
 	}
 
@@ -68,7 +68,7 @@ func Update_user(w http.ResponseWriter, r *http.Request) {
 		i++
 	}
 	if payload.FACTURATION_ACCOUNT != "" {
-		set_close += fmt.Sprint(comma(i), "account = $", i+1)
+		set_close += fmt.Sprint(comma(i), "facturation_account = $", i+1)
 		i++
 	}
 

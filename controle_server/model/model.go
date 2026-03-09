@@ -25,6 +25,7 @@ type Machine_controller struct {
 
 type User struct {
 	ID                  int       `json:"id"`
+	EMAIL			   	string    `json:"email"`
 	ACCESS_KEY          string    `json:"access_key"`
 	PASSWORD            string    `json:"password"`
 	FIRST_NAME          string    `json:"first_name"`

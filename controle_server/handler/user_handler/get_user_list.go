@@ -17,7 +17,7 @@ func Get_user_list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the users
-	query := "SELECT id, first_name, last_name, tva, facturation_address, facturation_account, status, created_at FROM users"
+	query := "SELECT id, email, access_key, first_name, last_name, tva, facturation_address, facturation_account, status, created_at FROM users"
 	var users []model.User
 	rows, err := database.Self.Query(query)
 	if err != nil {
@@ -30,6 +30,8 @@ func Get_user_list(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var user model.User
 		if err := rows.Scan(&user.ID,
+			&user.EMAIL,
+			&user.ACCESS_KEY,
 			&user.FIRST_NAME,
 			&user.LAST_NAME,
 			&user.TVA,
