@@ -191,15 +191,32 @@ void setup() {
     select_menu(qr, menu, EVENT_ANY);
 }
 
+static bool next_booking_equals(const NextBooking& a, const NextBooking& b) {
+    if (a.has_booking != b.has_booking) return false;
+    if (a.start_unix != b.start_unix || a.end_unix != b.end_unix) return false;
+    return (strcmp(a.user_name, b.user_name) == 0);
+}
+
 void refresh_next_booking_if_needed(void) {
     unsigned long now_ms = millis();
     if ((now_ms - last_next_booking_refresh_ms) < NEXT_BOOKING_REFRESH_INTERVAL_MS) {
         return;
     }
-    if (fetch_next_booking(&next_booking)) {
-        last_next_booking_refresh_ms = now_ms;
-        // If we are on the scan card screen, redraw it to reflect updated booking info
-        if (menu == SCAN_CARD) {
+    // Refresh icon only when checking for next booking (scan card screen), no full screen update
+    if (menu == SCAN_CARD) {
+        draw_title_right_status(true);
+    }
+    NextBooking fetched = {};
+    if (!fetch_next_booking(&fetched)) {
+        if (menu == SCAN_CARD) draw_title_right_status(false);
+        return;
+    }
+    last_next_booking_refresh_ms = now_ms;
+    bool changed = !next_booking_equals(next_booking, fetched);
+    next_booking = fetched;
+    if (menu == SCAN_CARD) {
+        draw_title_right_status(false);
+        if (changed) {
             draw_scan_card(qr, menu);
         }
     }

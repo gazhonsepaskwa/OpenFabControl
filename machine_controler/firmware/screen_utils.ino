@@ -68,14 +68,34 @@ void draw_button_right(char* msg, uint8_t r, uint8_t g, uint8_t b) {
 }
 #define SCREEN_WIDTH      320
 
-void draw_title(char* msg) {
-    printTFT(msg, 5, 3, tft.color565(255, 255, 255), 2);
-    if (wifi_connection_lost) {
+// Top-right status zone (same place as "SA" and refresh icon)
+#define RIGHT_STATUS_X    (SCREEN_WIDTH - 32)
+#define RIGHT_STATUS_Y    0
+#define RIGHT_STATUS_W    32
+#define RIGHT_STATUS_H    20
+
+// Draw only the top-right status zone (no full screen update): refresh icon or "SA" or blank
+void draw_title_right_status(bool refreshing) {
+    tft.fillRect(RIGHT_STATUS_X, RIGHT_STATUS_Y, RIGHT_STATUS_W, RIGHT_STATUS_H, ILI9341_BLACK);
+    if (refreshing) {
+        uint16_t color = tft.color565(100, 180, 255);
+        int cx = RIGHT_STATUS_X + RIGHT_STATUS_W / 2;
+        int cy = RIGHT_STATUS_Y + RIGHT_STATUS_H / 2;
+        tft.drawCircle(cx, cy, 6, color);
+        // Small arrow head (circular refresh hint) at top-right of circle
+        tft.drawLine(cx + 4, cy - 4, cx + 6, cy - 1, color);
+        tft.drawLine(cx + 6, cy - 1, cx + 3, cy + 2, color);
+    } else if (wifi_connection_lost) {
         tft.setTextColor(tft.color565(255, 200, 0));
         tft.setTextSize(2);
-        tft.setCursor(SCREEN_WIDTH - 24, 3);
+        tft.setCursor(RIGHT_STATUS_X + 4, 3);
         tft.print("SA");
     }
+}
+
+void draw_title(char* msg) {
+    printTFT(msg, 5, 3, tft.color565(255, 255, 255), 2);
+    draw_title_right_status(false);
 }
 void draw_center_background(uint8_t r, uint8_t g, uint8_t b) {
     tft.fillRect(0,  23, 320, 167, tft.color565(r, g, b));
