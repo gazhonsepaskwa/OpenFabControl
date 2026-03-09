@@ -68,6 +68,17 @@ void setup() {
     }
     Serial.println("OK");
 
+    // Screen init
+    Serial.print("TFT init...      ");
+    mcp1.pinMode(TFT_BL, OUTPUT);
+    mcp1.digitalWrite(TFT_BL, HIGH);
+    tft.begin();
+    tft.setSPISpeed(40000000); // SPI max speed (to check again, feel slow)
+    tft.setRotation(3);
+    tft.fillScreen(ILI9341_BLACK); // clear
+    printTFTcentered("Starting...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+    Serial.println("OK");
+
     // Relay init
     Serial.print("Relay init...    ");
     mcp1.pinMode(RELAY1, OUTPUT);
@@ -91,16 +102,6 @@ void setup() {
     Serial.print("Buzzer init...   ");
     mcp1.pinMode(BUZZER, OUTPUT);
     mcp1.digitalWrite(BUZZER, LOW);
-    Serial.println("OK");
-
-    // Screen init
-    Serial.print("TFT init...      ");
-    mcp1.pinMode(TFT_BL, OUTPUT);
-    mcp1.digitalWrite(TFT_BL, HIGH);
-    tft.begin();
-    tft.setSPISpeed(40000000); // SPI max speed (to check again, feel slow)
-    tft.setRotation(3);
-    tft.fillScreen(ILI9341_BLACK); // clear
     Serial.println("OK");
 
     // NFC init
@@ -187,11 +188,6 @@ void setup() {
 
     // start the interface
     force_refresh_next_booking();
-    Serial.println("Next booking: ");
-    Serial.println(next_booking.has_booking);
-    Serial.println(next_booking.start_unix);
-    Serial.println(next_booking.end_unix);
-    Serial.println(next_booking.user_name);
     select_menu(qr, menu, EVENT_ANY);
 }
 
