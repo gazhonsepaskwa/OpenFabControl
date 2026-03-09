@@ -43,6 +43,13 @@ enum Event {
 #define MACHINE_API_PORT       4080
 #define MACHINE_TYPE           "fm-bv2"
 
+// HTTP client timeout (ms) for API calls;
+#define MACHINE_API_TIMEOUT_MS 30000
+
+// WiFi check and reconnect (ms)
+#define WIFI_CHECK_INTERVAL_MS   2000
+#define WIFI_RECONNECT_INTERVAL_MS 5000
+
 struct SetupFormData {
     char machine_name[33];
     char ssid[33];
@@ -71,6 +78,7 @@ extern Session current_session;
 extern NextBooking next_booking;
 extern unsigned long last_tick_ms;
 extern unsigned long last_next_booking_refresh_ms;
+extern bool wifi_connection_lost;
 
 // sessions.ino
 bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg = nullptr, size_t err_size = 0);
@@ -87,6 +95,7 @@ void draw_machine_usage(Menu& menu);
 void draw_confirm_finish(Menu& menu);
 
 // firmware.ino helpers
+void check_wifi_and_reconnect(void);
 void refresh_next_booking_if_needed(void);
 void force_refresh_next_booking(void);
 

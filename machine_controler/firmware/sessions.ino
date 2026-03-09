@@ -12,33 +12,40 @@
 
 extern Adafruit_ILI9341 tft;
 
-// Parse RFC3339 datetime from API (assumed UTC, e.g. "2025-03-04T13:30:00Z")
-// Returns unix timestamp so that localtime_r() gives correct local time for display (Belgium, etc.)
+// Parse RFC3339 UTC datetime (e.g. "2026-03-06T09:51:00Z") to Unix timestamp.
 static int64_t rfc3339_utc_to_unix(const char* s) {
     if (!s || strlen(s) < 19) return 0;
     int y, mo, d, h, mi, sec;
     if (sscanf(s, "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &h, &mi, &sec) != 6)
         return 0;
-    struct tm tm = {};
-    tm.tm_year = y - 1900;
-    tm.tm_mon = mo - 1;
-    tm.tm_mday = d;
-    tm.tm_hour = h;
-    tm.tm_min = mi;
-    tm.tm_sec = sec;
-    // Interpret tm as UTC: temporarily set TZ to UTC so mktime() returns correct unix time
-    char tz_prev[64] = "UTC0";
-    const char* env_tz = getenv("TZ");
-    if (env_tz) {
-        strncpy(tz_prev, env_tz, sizeof(tz_prev) - 1);
-        tz_prev[sizeof(tz_prev) - 1] = '\0';
-    }
-    setenv("TZ", "UTC0", 1);
-    tzset();
-    time_t t = mktime(&tm);
-    setenv("TZ", tz_prev, 1);
-    tzset();
-    return (int64_t)t;
+    if (y < 1970 || mo < 1 || mo > 12 || d < 1 || d > 31)
+        return 0;
+
+    static const int mdays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+
+    int64_t days = 0;
+    for (int yr = 1970; yr < y; ++yr)
+        days += (yr % 4 == 0 && (yr % 100 != 0 || yr % 400 == 0)) ? 366 : 365;
+    for (int m = 0; m < mo - 1; ++m)
+        days += mdays[m];
+    if (mo > 2 && (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)))
+        days++;
+    days += d - 1;
+
+    return days * 86400LL + h * 3600 + mi * 60 + sec;
+}
+
+// Map HTTPClient error codes to error msg
+static void set_http_error_msg(int code, char* err_msg, size_t err_size) {
+    if (!err_msg || err_size == 0) return;
+    const char* msg = "Connection failed";
+    if (code == -1) msg = "Connection refused (check server)";
+    else if (code == -4) msg = "WiFi disconnected";
+    else if (code == -5) msg = "Connection lost";
+    else if (code == -6 || code == -11) msg = "Timeout (try again)";
+    else if (code < 0) msg = "Network error";
+    snprintf(err_msg, err_size, "%s", msg);
+    err_msg[err_size - 1] = '\0';
 }
 
 bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg, size_t err_size) {
@@ -56,18 +63,24 @@ bool start_session(const char* access_key, const char* resource_uuid, Session* o
     HTTPClient http;
     http.begin(client, url);
     http.addHeader("Content-Type", "application/json");
+    http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
     int code = http.POST(body);
 
     if (code < 200 || code >= 300) {
-        String payload = http.getString();
         if (err_msg && err_size > 0) {
-            JsonDocument doc;
-            if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
-                strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
+            if (code < 0) {
+                set_http_error_msg(code, err_msg, err_size);
             } else {
-                snprintf(err_msg, err_size, "HTTP %d", code);
+                String payload = http.getString();
+                JsonDocument doc;
+                if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
+                    strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
+                } else {
+                    snprintf(err_msg, err_size, "HTTP %d", code);
+                }
+                err_msg[err_size - 1] = '\0';
             }
-            err_msg[err_size - 1] = '\0';
         }
         http.end();
         return false;
@@ -118,6 +131,8 @@ bool stop_session(const char* resource_uuid) {
     return (code >= 200 && code < 300);
 }
 
+// Server must return the *current* ongoing booking if any (slot already started, not yet ended),
+// not only the next future one; otherwise the device shows FREE during an active booking.
 bool fetch_next_booking(NextBooking* out) {
     if (!out) return false;
 

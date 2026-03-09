@@ -10,11 +10,12 @@
 
 #include "pins.h"
 #include "firmware.h"
+#include "screen_utils.h"
+#include "utils.h"
 
 // component objects declaration
 Adafruit_MCP23X17       mcp1;
 Adafruit_MCP23X17       mcp2;
-#include "utils.h"
 Adafruit_ILI9341        tft(TFT_CS, TFT_DC, TFT_RST); // default VSPI bus
 Electroniccats_PN7150   nfc(NFC_IRQ, -1, NFC_ADDR, PN7150); // VIN -> -1 since managed externally
 
@@ -30,6 +31,11 @@ char                    last_scanned_access_key[32] = {0};
 NextBooking             next_booking = {};
 unsigned long           last_next_booking_refresh_ms = 0;
 
+// WiFi status (set in loop when disconnected; used to show "SA" (stand alone) on screen)
+bool                    wifi_connection_lost = false;
+unsigned long           last_wifi_check_ms = 0;
+unsigned long           last_wifi_reconnect_ms = 0;
+
 // Other
 Menu menu = INIT;  // enum
 QRCodeGFX qr(tft);
@@ -38,7 +44,7 @@ void setup() {
     Serial.begin(115200);
     Serial.println("╔══════════════════════════════════════════╗");
     Serial.println("║ Program : OFC machine_controler firmware ║");
-    Serial.println("║ Version : 0.1 (setup process)            ║");
+    Serial.println("║ Version : v beta 1.0                     ║");
     Serial.println("╚══════════════════════════════════════════╝");
     Serial.println("");
 
@@ -145,8 +151,21 @@ void setup() {
         unsigned long start = millis();
         while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000)
             delay(200);
-        setenv("TZ", TZ_STRING, 1);
+
+        // set timezone
         configTime(0, 0, "pool.ntp.org");
+        setenv("TZ", TZ_STRING, 1);
+        tzset();
+
+        // wait for NTP sync (needed for draw_scan_card to compute has_booking_today)
+        struct tm timeinfo;
+        int ntp_retries = 0;
+        while (!getLocalTime(&timeinfo) && ntp_retries++ < 30) {
+            delay(500);
+        }
+        if (!getLocalTime(&timeinfo)) {
+            Serial.println("WARN: NTP sync failed, time-based display may be wrong");
+        }
     }
 
     // wait for server to approve the machine
@@ -166,11 +185,13 @@ void setup() {
     }
     Serial.println("OK");
 
-    // initial fetch of next booking (best effort)
-    fetch_next_booking(&next_booking);
-    last_next_booking_refresh_ms = millis();
-
     // start the interface
+    force_refresh_next_booking();
+    Serial.println("Next booking: ");
+    Serial.println(next_booking.has_booking);
+    Serial.println(next_booking.start_unix);
+    Serial.println(next_booking.end_unix);
+    Serial.println(next_booking.user_name);
     select_menu(qr, menu, EVENT_ANY);
 }
 
@@ -194,9 +215,39 @@ void force_refresh_next_booking(void) {
     }
 }
 
+void check_wifi_and_reconnect(void) {
+    unsigned long now_ms = millis();
+    if (now_ms - last_wifi_check_ms < WIFI_CHECK_INTERVAL_MS)
+        return;
+    last_wifi_check_ms = now_ms;
+
+    if (WiFi.status() != WL_CONNECTED) {
+        if (!wifi_connection_lost) {
+            wifi_connection_lost = true;
+            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+        }
+        if (now_ms - last_wifi_reconnect_ms >= WIFI_RECONNECT_INTERVAL_MS) {
+            last_wifi_reconnect_ms = now_ms;
+            String sta_ssid = preferences.getString(WIFI_STA_SSID_KEY, "");
+            String sta_pass = preferences.getString(WIFI_STA_PASS_KEY, "");
+            if (sta_ssid.length() > 0) {
+                WiFi.disconnect();
+                WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
+            }
+        }
+    } else {
+        if (wifi_connection_lost) {
+            wifi_connection_lost = false;
+            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+        }
+    }
+}
+
 void loop() {
     bool btnL_state = mcp2.digitalRead(BTN_L);
     bool btnR_state = mcp2.digitalRead(BTN_R);
+
+    check_wifi_and_reconnect();
 
     // Periodic refresh of next booking info while on scan card screen
     if (menu == SCAN_CARD) {

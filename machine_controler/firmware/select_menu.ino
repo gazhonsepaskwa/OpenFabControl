@@ -59,6 +59,11 @@ void draw_scan_card(QRCodeGFX& qr, Menu& menu) {
             has_booking_today = true;
             format_booking_time_range(next_booking, time_range, sizeof(time_range));
         }
+        // fallback: if time looks unsynced (e.g. 1970) but we have a booking, show it anyway
+        else if (now_sec < 1000000000) {
+            has_booking_today = true;
+            format_booking_time_range(next_booking, time_range, sizeof(time_range));
+        }
 
         if (now_sec >= next_booking.start_unix && now_sec < next_booking.end_unix) {
             is_current_booking = true;

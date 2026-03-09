@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "firmware.h"
+
 // External reference to global tft object defined in firmware.ino
 extern Adafruit_ILI9341 tft;
 
@@ -64,8 +66,16 @@ void draw_button_right(char* msg, uint8_t r, uint8_t g, uint8_t b) {
     tft.fillRect(165, 200, 155,  50, tft.color565(r, g, b));
     printTFTcentered(msg, tft.color565(0, 0, 0), 2, 165, 200, 155, 50);
 }
+#define SCREEN_WIDTH      320
+
 void draw_title(char* msg) {
     printTFT(msg, 5, 3, tft.color565(255, 255, 255), 2);
+    if (wifi_connection_lost) {
+        tft.setTextColor(tft.color565(255, 200, 0));
+        tft.setTextSize(2);
+        tft.setCursor(SCREEN_WIDTH - 24, 3);
+        tft.print("SA");
+    }
 }
 void draw_center_background(uint8_t r, uint8_t g, uint8_t b) {
     tft.fillRect(0,  23, 320, 167, tft.color565(r, g, b));
