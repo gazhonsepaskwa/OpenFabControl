@@ -191,8 +191,12 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
             } else if (ev == EVENT_BTN_RIGHT) {
                 String resource_uuid = preferences.getString(UUID_KEY, "");
                 if (stop_session(resource_uuid.c_str())) {
-                    draw_scan_card(qr, menu);
+                    clear_screen();
+                    printTFTcentered("exiting session...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+                    delay(2000);
                     relay_off();
+                    force_refresh_next_booking();
+                    draw_scan_card(qr, menu);
                 } else {
                     show_session_error("Stop session failed");
                     delay(5000);
