@@ -51,8 +51,11 @@ Don't know what you can do ? contact me!
 to run it :
    exec make on the folder root. If does not work check you .env var.
 ### Machine controler
-To compile it, go to the arduino IDE and press the compile button. or compile-and-upload if it is want you wanna do.
-*Note:* I'll try to have a terminal based compilation and upload in the future.
+to compile it :
+   exec make compile in the firmware folder.
+to upload it :
+   exec make upload in the firmware folder.
+   Note: be sure your board is in download mode (tuto comming soon)
 
 ## Roadmap
 
