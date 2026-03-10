@@ -126,6 +126,45 @@ Dates are RFC3339 (firmware uses first 19 chars: `YYYY-MM-DDTHH:MM:SS`). `user_n
 
 ---
 
+### POST /machine-api/add_time
+Adds extra time to the currently active session on a machine (if there is no overlap with future bookings).
+
+**Input (JSON):**
+| Parameter     | Type   | Required | Description                            |
+|---------------|--------|----------|----------------------------------------|
+| resource_uuid | string | yes      | Machine UUID                           |
+| add_minutes   | int    | yes      | Number of minutes to add (> 0)        |
+
+**Outputs:**
+| Code | Body                                                                 |
+|------|----------------------------------------------------------------------|
+| 200  | `{"session":{id,user_id,resource_uuid,started_at,ended_at,time_used,status:"progress"}}` (with updated `ended_at`) |
+| 400  | `{"error":"invalid payload: resource_uuid cannot be empty"}` or `{"error":"invalid payload: add_minutes must be > 0"}` or `{"error":"Not enough free time to extend session"}` |
+| 404  | `{"error":"No active session in progress for this resource"}`        |
+| 405  | `{"error":"Method not allowed"}`                                      |
+| 500  | `{"error":"Internal Server Error"}`                                   |
+
+---
+
+### POST /machine-api/get_max_add_time
+Returns how many minutes can be added to the current active session without overlapping the next booking. Returns `-1` when there is no future booking (illimité).
+
+**Input (JSON):**
+| Parameter     | Type   | Required |
+|---------------|--------|----------|
+| resource_uuid | string | yes      |
+
+**Outputs:**
+| Code | Body                                          |
+|------|-----------------------------------------------|
+| 200  | `{"max_add_minutes": 0}` or positive integer, or `{"max_add_minutes": -1}` when unlimited |
+| 400  | `{"error":"invalid payload: resource_uuid cannot be empty"}` |
+| 404  | `{"error":"No active session in progress for this resource"}` |
+| 405  | `{"error":"Method not allowed"}`              |
+| 500  | `{"error":"Internal Server Error"}`           |
+
+---
+
 ### POST /machine-api/create_user
 Creates a user (same handler as admin).
 

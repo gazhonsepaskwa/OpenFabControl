@@ -1,0 +1,4 @@
+curl -k -X POST -H "Content-Type: application/json" \
+  -d '{"resource_uuid":"064e7ca1-363b-4637-ffe9-fa8b32aa8c08"}' \
+  https://localhost:4080/machine-api/get_max_add_time
+
