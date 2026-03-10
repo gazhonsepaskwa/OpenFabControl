@@ -11,14 +11,17 @@ enum Menu {
     SCAN_CARD,
     MACHINE_INFO,
     MACHINE_USAGE,
-    CONFIRM_FINISH
+    CONFIRM_FINISH,
+    ADD_TIME
 };
 
 enum Event {
     EVENT_BTN_LEFT,
     EVENT_BTN_RIGHT,
     EVENT_CARD,
-    EVENT_ANY
+    EVENT_ANY,
+    EVENT_BTN_LEFT_LONG,
+    EVENT_BTN_RIGHT_LONG
 };
 
 // Refresh interval (in minutes) for fetching next booking info
@@ -28,6 +31,9 @@ enum Event {
 // Timezone for NTP and display (POSIX TZ string)
 // Examples: "CET-1CEST,M3.5.0,M10.5.0/3" (Europe/Paris), "UTC0", "EST5EDT,M3.2.0,M11.1.0"
 #define TZ_STRING   "CET-1CEST,M3.5.0,M10.5.0/3"
+
+// Long press duration (ms)
+#define LONG_PRESS_MS 700
 
 // 'preferences' keys
 #define SETUP_COMPLETED_KEY     "setup_completed"
@@ -85,6 +91,8 @@ bool start_session(const char* access_key, const char* resource_uuid, Session* o
 bool stop_session(const char* resource_uuid);
 void show_session_error(const char* msg);
 bool fetch_next_booking(NextBooking* out);
+bool get_max_add_time(const char* resource_uuid, int* out_max, char* err_msg = nullptr, size_t err_size = 0);
+bool add_time(const char* resource_uuid, int add_minutes, Session* out, char* err_msg = nullptr, size_t err_size = 0);
 
 extern char last_scanned_access_key[32];
 

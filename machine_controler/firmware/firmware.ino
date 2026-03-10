@@ -269,20 +269,36 @@ void loop() {
 
     // LEFT BTN EVENT
     if (btnL_state == LOW) {
+        unsigned long press_start = millis();
         // wait the button to be released
         while (btnL_state == LOW) {
             btnL_state = mcp2.digitalRead(BTN_L);
         }
-        select_menu(qr, menu, EVENT_BTN_LEFT);
+        unsigned long duration = millis() - press_start;
+        Event ev;
+        if (menu == ADD_TIME && duration >= LONG_PRESS_MS) {
+            ev = EVENT_BTN_LEFT_LONG;
+        } else {
+            ev = EVENT_BTN_LEFT;
+        }
+        select_menu(qr, menu, ev);
     }
 
     // RIGHT BTN EVENT
     else if (btnR_state == LOW) {
+        unsigned long press_start = millis();
         // wait the button to be released
         while (btnR_state == LOW) {
             btnR_state = mcp2.digitalRead(BTN_R);
         }
-        select_menu(qr, menu, EVENT_BTN_RIGHT);
+        unsigned long duration = millis() - press_start;
+        Event ev;
+        if (menu == ADD_TIME && duration >= LONG_PRESS_MS) {
+            ev = EVENT_BTN_RIGHT_LONG;
+        } else {
+            ev = EVENT_BTN_RIGHT;
+        }
+        select_menu(qr, menu, ev);
     }
 
     // CARD EVENT

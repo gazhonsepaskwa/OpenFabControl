@@ -12,6 +12,11 @@
 
 extern Adafruit_ILI9341 tft;
 
+// Add time
+static int add_time_selected_minutes = 0;
+static int add_time_max_minutes = 0;
+static bool add_time_unlimited = false;
+
 static void format_booking_time_range(const NextBooking& booking, char* out, size_t out_size) {
     if (!booking.has_booking || out_size == 0) {
         if (out_size) out[0] = '\0';
@@ -145,6 +150,40 @@ void draw_machine_usage(Menu& menu) {
     draw_machine_usage_times_inner();
     menu = MACHINE_USAGE;
 }
+
+static void draw_add_time_values(void) {
+    uint16_t bg = tft.color565(60, 120, 180);
+    tft.fillRect(0, 80, 320, 40, bg);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "+%d min", add_time_selected_minutes);
+    printTFTcentered(buf, tft.color565(255, 255, 255), 3, 0, 80, 320, 40);
+
+    tft.fillRect(0, 130, 320, 25, bg);
+    if (add_time_unlimited) {
+        printTFTcentered("Max: unlimited", tft.color565(230, 230, 230), 2, 0, 130, 320, 25);
+    } else if (add_time_max_minutes == 0) {
+        printTFTcentered("No extra time available", tft.color565(255, 200, 200), 2, 0, 130, 320, 25);
+    } else if (add_time_max_minutes > 0) {
+        char maxbuf[32];
+        snprintf(maxbuf, sizeof(maxbuf), "Max: %d min", add_time_max_minutes);
+        printTFTcentered(maxbuf, tft.color565(230, 230, 230), 2, 0, 130, 320, 25);
+    }
+}
+
+static void draw_add_time_screen(Menu& menu) {
+    clear_screen();
+    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+    draw_center_background(60, 120, 180);
+
+    printTFTcentered("Add time", tft.color565(255, 255, 255), 2, 0, 40, 320, 30);
+    draw_add_time_values();
+
+    // Buttons: explain tap/long press behavior
+    draw_button_left((char*)"T +5m | L -5m");
+    draw_button_right((char*)"T <- | L OK");
+
+    menu = ADD_TIME;
+}
 void draw_confirm_finish(Menu& menu) {
     clear_screen();
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
@@ -182,8 +221,55 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
             if (ev == EVENT_BTN_LEFT) { draw_scan_card(qr, menu); }
             break;
         case MACHINE_USAGE:
-            if (ev == EVENT_BTN_LEFT) { }  // to-do Add time
+            if (ev == EVENT_BTN_LEFT) {
+                String resource_uuid = preferences.getString(UUID_KEY, "");
+                char errbuf[64] = {0};
+                int max_add = 0;
+                if (!get_max_add_time(resource_uuid.c_str(), &max_add, errbuf, sizeof(errbuf))) {
+                    show_session_error(errbuf[0] ? errbuf : "Get max add time failed");
+                    delay(3000);
+                    draw_machine_usage(menu);
+                } else {
+                    add_time_selected_minutes = 0;
+                    add_time_max_minutes = max_add;
+                    add_time_unlimited = (max_add == -1);
+                    draw_add_time_screen(menu);
+                }
+            }
             else if (ev == EVENT_BTN_RIGHT) { draw_confirm_finish(menu); }
+            break;
+        case ADD_TIME:
+            if (ev == EVENT_BTN_LEFT) {
+                add_time_selected_minutes += 5;
+                if (!add_time_unlimited && add_time_max_minutes >= 0 && add_time_selected_minutes > add_time_max_minutes) {
+                    add_time_selected_minutes = add_time_max_minutes;
+                }
+                draw_add_time_values();
+            } else if (ev == EVENT_BTN_LEFT_LONG) {
+                add_time_selected_minutes -= 5;
+                if (add_time_selected_minutes < 0) add_time_selected_minutes = 0;
+                draw_add_time_values();
+            } else if (ev == EVENT_BTN_RIGHT) {
+                // Cancel and go back
+                draw_machine_usage(menu);
+            } else if (ev == EVENT_BTN_RIGHT_LONG) {
+                if (add_time_selected_minutes <= 0) {
+                    show_session_error("No time to add");
+                    delay(2000);
+                    draw_add_time_screen(menu);
+                } else {
+                    String resource_uuid = preferences.getString(UUID_KEY, "");
+                    char errbuf[64] = {0};
+                    if (add_time(resource_uuid.c_str(), add_time_selected_minutes, &current_session, errbuf, sizeof(errbuf))) {
+                        last_tick_ms = millis();
+                        draw_machine_usage(menu);
+                    } else {
+                        show_session_error(errbuf[0] ? errbuf : "Add time failed");
+                        delay(3000);
+                        draw_machine_usage(menu);
+                    }
+                }
+            }
             break;
         case CONFIRM_FINISH:
             if (ev == EVENT_BTN_LEFT) {
