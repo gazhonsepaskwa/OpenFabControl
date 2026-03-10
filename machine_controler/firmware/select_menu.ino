@@ -105,7 +105,7 @@ void draw_scan_card(QRCodeGFX& qr, Menu& menu) {
     printTFTcentered("Scan card", tft.color565(0, 0, 0), 2, 0, 90, 160, 30);
     printTFTcentered("to unlock", tft.color565(0, 0, 0), 2, 0, 110, 160, 30);
     printTFTcentered("Or book here",   tft.color565(0, 0, 0), 2, 160, 150, 160, 30);
-    qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 230, 100);
+    qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 200, 75);
 
     menu = SCAN_CARD;
 }
@@ -115,7 +115,7 @@ void draw_machine_info(QRCodeGFX& qr, Menu& menu) {
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("<- Back");
     printTFTcentered( "User Manual",   tft.color565(0, 0, 0), 2, 0, 150, 160, 30);
-    qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 150, 100);
+    qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 120, 75);
     menu = MACHINE_INFO;
 }
 

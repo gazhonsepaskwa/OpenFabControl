@@ -187,6 +187,7 @@ void setup() {
     Serial.println("OK");
 
     // start the interface
+    qr.setScale(2);  // 1 = default size, 2 = double, 3 = triple, etc.
     force_refresh_next_booking();
     select_menu(qr, menu, EVENT_ANY);
 }
