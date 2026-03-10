@@ -6,6 +6,7 @@ import (
 	"OpenFabControl/utils"
 	"database/sql"
 	"net/http"
+	"time"
 )
 
 // Route for a resource to stop the current session (resource_uuid only)
@@ -43,13 +44,15 @@ func Stop_session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update status to done
-	_, err = database.Self.Exec("UPDATE sessions SET status = 'done' WHERE id = $1", session.ID)
+	// Update status to done and ended_at to current time
+	now := time.Now()
+	_, err = database.Self.Exec("UPDATE sessions SET status = 'done', ended_at = $2 WHERE id = $1", session.ID, now)
 	if err != nil {
 		utils.Respond_error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	session.Status = "done"
+	session.EndedAt = now
 
 	utils.Respond_json(w, map[string]any{
 		"session": session,
