@@ -12,7 +12,8 @@ enum Menu {
     MACHINE_INFO,
     MACHINE_USAGE,
     CONFIRM_FINISH,
-    ADD_TIME
+    ADD_TIME,
+    BOOK_SESSION
 };
 
 enum Event {
@@ -34,6 +35,9 @@ enum Event {
 
 // Long press duration (ms)
 #define LONG_PRESS_MS 700
+
+// Book session minimum duration (minutes)
+#define BOOK_SESSION_MIN_MINUTES 10
 
 // 'preferences' keys
 #define SETUP_COMPLETED_KEY     "setup_completed"
@@ -93,6 +97,7 @@ void show_session_error(const char* msg);
 bool fetch_next_booking(NextBooking* out);
 bool get_max_add_time(const char* resource_uuid, int* out_max, char* err_msg = nullptr, size_t err_size = 0);
 bool add_time(const char* resource_uuid, int add_minutes, Session* out, char* err_msg = nullptr, size_t err_size = 0);
+bool create_session(const char* access_key, const char* resource_uuid, int duration_minutes, Session* out, char* err_msg = nullptr, size_t err_size = 0);
 
 extern char last_scanned_access_key[32];
 

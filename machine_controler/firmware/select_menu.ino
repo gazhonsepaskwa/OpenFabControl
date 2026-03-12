@@ -9,6 +9,7 @@
 #include "firmware.h"
 #include "screen_utils.h"
 #include "utils.h"
+#include <string.h>
 
 extern Adafruit_ILI9341 tft;
 
@@ -16,6 +17,9 @@ extern Adafruit_ILI9341 tft;
 static int add_time_selected_minutes = 0;
 static int add_time_max_minutes = 0;
 static bool add_time_unlimited = false;
+
+// Book session (from machine when no session to start)
+static int book_session_minutes = BOOK_SESSION_MIN_MINUTES;
 
 static void format_booking_time_range(const NextBooking& booking, char* out, size_t out_size) {
     if (!booking.has_booking || out_size == 0) {
@@ -179,8 +183,8 @@ static void draw_add_time_screen(Menu& menu) {
     draw_add_time_values();
 
     // Buttons: explain tap/long press behavior
-    draw_button_left((char*)"T +5m | L -5m");
-    draw_button_right((char*)"T <- | L OK");
+    draw_button_left((char*)"+5m | -5m");
+    draw_button_right((char*)"<- | OK");
 
     menu = ADD_TIME;
 }
@@ -191,6 +195,30 @@ void draw_confirm_finish(Menu& menu) {
     draw_button_right("Confirm", 255, 100, 100);
     printTFTcentered("Finish session early ?", tft.color565(255, 100, 100), 2, 0, 23, 320, 167);
     menu = CONFIRM_FINISH;
+}
+
+static void draw_book_session_values(void) {
+    uint16_t bg = tft.color565(80, 140, 80);
+    tft.fillRect(0, 80, 320, 40, bg);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%d min", book_session_minutes);
+    printTFTcentered(buf, tft.color565(255, 255, 255), 3, 0, 80, 320, 40);
+    tft.fillRect(0, 125, 320, 25, bg);
+    printTFTcentered("Min 10 min", tft.color565(230, 230, 230), 2, 0, 125, 320, 25);
+}
+
+static void draw_book_session_screen(Menu& menu) {
+    clear_screen();
+    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+    draw_center_background(80, 140, 80);
+
+    printTFTcentered("Book session", tft.color565(255, 255, 255), 2, 0, 40, 320, 30);
+    draw_book_session_values();
+
+    draw_button_left((char*)"+5m | -5m");
+    draw_button_right((char*)"X | OK");
+
+    menu = BOOK_SESSION;
 }
 
 void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
@@ -205,15 +233,22 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
                 Serial.print("Scanned Badge : ");
                 Serial.println(last_scanned_access_key);
                 String resource_uuid = preferences.getString(UUID_KEY, "");
-                char errbuf[64];
+                char errbuf[64] = {0};
                 if (start_session(last_scanned_access_key, resource_uuid.c_str(), &current_session, errbuf, sizeof(errbuf))) {
                     last_tick_ms = millis();
                     relay_on();
                     draw_machine_usage(menu);
                 } else {
-                    show_session_error(errbuf[0] ? errbuf : "Start session failed");
-                    delay(5000);
-                    draw_scan_card(qr, menu);
+                    const char* err = errbuf[0] ? errbuf : "Start session failed";
+                    bool no_session = (strstr(errbuf, "no session") != nullptr) || (strstr(errbuf, "No session") != nullptr);
+                    if (no_session) {
+                        book_session_minutes = BOOK_SESSION_MIN_MINUTES;
+                        draw_book_session_screen(menu);
+                    } else {
+                        show_session_error(err);
+                        delay(5000);
+                        draw_scan_card(qr, menu);
+                    }
                 }
             }
             break;
@@ -268,6 +303,45 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
                         delay(3000);
                         draw_machine_usage(menu);
                     }
+                }
+            }
+            break;
+        case BOOK_SESSION:
+            if (ev == EVENT_BTN_LEFT) {
+                book_session_minutes += 5;
+                draw_book_session_values();
+            } else if (ev == EVENT_BTN_LEFT_LONG) {
+                book_session_minutes -= 5;
+                if (book_session_minutes < BOOK_SESSION_MIN_MINUTES) book_session_minutes = BOOK_SESSION_MIN_MINUTES;
+                draw_book_session_values();
+            } else if (ev == EVENT_BTN_RIGHT) {
+                draw_scan_card(qr, menu);
+            } else if (ev == EVENT_BTN_RIGHT_LONG) {
+                String resource_uuid = preferences.getString(UUID_KEY, "");
+                char errbuf[64] = {0};
+                if (create_session(last_scanned_access_key, resource_uuid.c_str(), book_session_minutes, &current_session, errbuf, sizeof(errbuf))) {
+                    clear_screen();
+                    draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+                    draw_center_background(60, 100, 140);
+                    printTFTcentered("Starting session...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+                    printTFTcentered("Please wait", tft.color565(220, 220, 220), 2, 0, 100, 320, 30);
+                    // Give some margin so that started_at (set slightly in the future)
+                    // is definitely in the past when we effectively start using the machine.
+                    delay(5000);
+                    if (start_session(last_scanned_access_key, resource_uuid.c_str(), &current_session, errbuf, sizeof(errbuf))) {
+                        last_tick_ms = millis();
+                        relay_on();
+                        draw_machine_usage(menu);
+                    } else {
+                        const char* err = errbuf[0] ? errbuf : "Start session failed";
+                        show_session_error(err);
+                        delay(5000);
+                        draw_scan_card(qr, menu);
+                    }
+                } else {
+                    show_session_error(errbuf[0] ? errbuf : "Book failed");
+                    delay(3000);
+                    draw_scan_card(qr, menu);
                 }
             }
             break;

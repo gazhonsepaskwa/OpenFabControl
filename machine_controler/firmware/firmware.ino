@@ -277,7 +277,7 @@ void loop() {
         }
         unsigned long duration = millis() - press_start;
         Event ev;
-        if (menu == ADD_TIME && duration >= LONG_PRESS_MS) {
+        if ((menu == ADD_TIME || menu == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
             ev = EVENT_BTN_LEFT_LONG;
         } else {
             ev = EVENT_BTN_LEFT;
@@ -294,7 +294,7 @@ void loop() {
         }
         unsigned long duration = millis() - press_start;
         Event ev;
-        if (menu == ADD_TIME && duration >= LONG_PRESS_MS) {
+        if ((menu == ADD_TIME || menu == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
             ev = EVENT_BTN_RIGHT_LONG;
         } else {
             ev = EVENT_BTN_RIGHT;
