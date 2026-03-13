@@ -8,10 +8,10 @@
 
 #include "firmware.h"
 #include "screen_utils.h"
-#include "utils.h"
 #include <string.h>
 
-extern Adafruit_ILI9341 tft;
+// External reference to global h object defined in firmware.ino
+extern hardware h;
 
 // Add time
 static int add_time_selected_minutes = 0;
@@ -87,10 +87,10 @@ void draw_scan_card(QRCodeGFX& qr, Menu& menu) {
         char booked_line[48];
         const char* user = (next_booking.user_name[0] ? next_booking.user_name : "?");
         snprintf(booked_line, sizeof(booked_line), "BOOKED by %s", user);
-        printTFTcentered(booked_line, tft.color565(0, 0, 0), 2, 0, 23, 320, 30);
+        printTFTcentered(booked_line, h.tft.color565(0, 0, 0), 2, 0, 23, 320, 30);
 
         if (has_booking_today && time_range[0]) {
-            printTFTcentered(time_range, tft.color565(0, 0, 0), 2, 0, 43, 320, 30);
+            printTFTcentered(time_range, h.tft.color565(0, 0, 0), 2, 0, 43, 320, 30);
         }
     } else {
         // Machine free
@@ -98,17 +98,17 @@ void draw_scan_card(QRCodeGFX& qr, Menu& menu) {
         draw_button_left("Manual");
 
         if (has_booking_today && time_range[0]) {
-            printTFTcentered("FREE | Next:", tft.color565(0, 0, 0), 2, 0, 23, 320, 30);
-            printTFTcentered(time_range, tft.color565(0, 0, 0), 2, 0, 43, 320, 30);
+            printTFTcentered("FREE | Next:", h.tft.color565(0, 0, 0), 2, 0, 23, 320, 30);
+            printTFTcentered(time_range, h.tft.color565(0, 0, 0), 2, 0, 43, 320, 30);
         } else {
             // No booking today or no future booking
-            printTFTcentered("FREE", tft.color565(0, 0, 0), 3, 0, 40, 320, 40);
+            printTFTcentered("FREE", h.tft.color565(0, 0, 0), 3, 0, 40, 320, 40);
         }
     }
 
-    printTFTcentered("Scan card", tft.color565(0, 0, 0), 2, 0, 90, 160, 30);
-    printTFTcentered("to unlock", tft.color565(0, 0, 0), 2, 0, 110, 160, 30);
-    printTFTcentered("Or book here",   tft.color565(0, 0, 0), 2, 160, 150, 160, 30);
+    printTFTcentered("Scan card", h.tft.color565(0, 0, 0), 2, 0, 90, 160, 30);
+    printTFTcentered("to unlock", h.tft.color565(0, 0, 0), 2, 0, 110, 160, 30);
+    printTFTcentered("Or book here",   h.tft.color565(0, 0, 0), 2, 160, 150, 160, 30);
     qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 200, 75);
 
     menu = SCAN_CARD;
@@ -118,7 +118,7 @@ void draw_machine_info(QRCodeGFX& qr, Menu& menu) {
     clear_screen();
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("<- Back");
-    printTFTcentered( "User Manual",   tft.color565(0, 0, 0), 2, 0, 150, 160, 30);
+    printTFTcentered( "User Manual",   h.tft.color565(0, 0, 0), 2, 0, 150, 160, 30);
     qr.draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 120, 75);
     menu = MACHINE_INFO;
 }
@@ -132,12 +132,12 @@ void draw_machine_usage_times_inner(void) {
 
     char buf[16];
     format_hms(time_left, buf, sizeof(buf));
-    tft.fillRect(0, 95, 160, 45, ILI9341_BLACK);
-    printTFTcentered(buf, tft.color565(255, 255, 255), 3, 0, 95, 160, 45);
+    h.tft.fillRect(0, 95, 160, 45, ILI9341_BLACK);
+    printTFTcentered(buf, h.tft.color565(255, 255, 255), 3, 0, 95, 160, 45);
 
     format_hms(time_used_val, buf, sizeof(buf));
-    tft.fillRect(160, 95, 160, 45, ILI9341_BLACK);
-    printTFTcentered(buf, tft.color565(255, 255, 255), 3, 160, 95, 160, 45);
+    h.tft.fillRect(160, 95, 160, 45, ILI9341_BLACK);
+    printTFTcentered(buf, h.tft.color565(255, 255, 255), 3, 160, 95, 160, 45);
 }
 
 void update_machine_usage_times(void) {
@@ -149,28 +149,28 @@ void draw_machine_usage(Menu& menu) {
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("Add time");
     draw_button_right("Finish", 255, 100, 100);
-    printTFTcentered("Time Left:", tft.color565(255, 255, 255), 2, 0, 70, 160, 30);
-    printTFTcentered("Time used:", tft.color565(255, 255, 255), 2, 160, 70, 160, 30);
+    printTFTcentered("Time Left:", h.tft.color565(255, 255, 255), 2, 0, 70, 160, 30);
+    printTFTcentered("Time used:", h.tft.color565(255, 255, 255), 2, 160, 70, 160, 30);
     draw_machine_usage_times_inner();
     menu = MACHINE_USAGE;
 }
 
 static void draw_add_time_values(void) {
-    uint16_t bg = tft.color565(60, 120, 180);
-    tft.fillRect(0, 80, 320, 40, bg);
+    uint16_t bg = h.tft.color565(60, 120, 180);
+    h.tft.fillRect(0, 80, 320, 40, bg);
     char buf[32];
     snprintf(buf, sizeof(buf), "+%d min", add_time_selected_minutes);
-    printTFTcentered(buf, tft.color565(255, 255, 255), 3, 0, 80, 320, 40);
+    printTFTcentered(buf, h.tft.color565(255, 255, 255), 3, 0, 80, 320, 40);
 
-    tft.fillRect(0, 130, 320, 25, bg);
+    h.tft.fillRect(0, 130, 320, 25, bg);
     if (add_time_unlimited) {
-        printTFTcentered("Max: unlimited", tft.color565(230, 230, 230), 2, 0, 130, 320, 25);
+        printTFTcentered("Max: unlimited", h.tft.color565(230, 230, 230), 2, 0, 130, 320, 25);
     } else if (add_time_max_minutes == 0) {
-        printTFTcentered("No extra time available", tft.color565(255, 200, 200), 2, 0, 130, 320, 25);
+        printTFTcentered("No extra time available", h.tft.color565(255, 200, 200), 2, 0, 130, 320, 25);
     } else if (add_time_max_minutes > 0) {
         char maxbuf[32];
         snprintf(maxbuf, sizeof(maxbuf), "Max: %d min", add_time_max_minutes);
-        printTFTcentered(maxbuf, tft.color565(230, 230, 230), 2, 0, 130, 320, 25);
+        printTFTcentered(maxbuf, h.tft.color565(230, 230, 230), 2, 0, 130, 320, 25);
     }
 }
 
@@ -179,7 +179,7 @@ static void draw_add_time_screen(Menu& menu) {
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_center_background(60, 120, 180);
 
-    printTFTcentered("Add time", tft.color565(255, 255, 255), 2, 0, 40, 320, 30);
+    printTFTcentered("Add time", h.tft.color565(255, 255, 255), 2, 0, 40, 320, 30);
     draw_add_time_values();
 
     // Buttons: explain tap/long press behavior
@@ -193,18 +193,18 @@ void draw_confirm_finish(Menu& menu) {
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_button_left("<- Back");
     draw_button_right("Confirm", 255, 100, 100);
-    printTFTcentered("Finish session early ?", tft.color565(255, 100, 100), 2, 0, 23, 320, 167);
+    printTFTcentered("Finish session early ?", h.tft.color565(255, 100, 100), 2, 0, 23, 320, 167);
     menu = CONFIRM_FINISH;
 }
 
 static void draw_book_session_values(void) {
-    uint16_t bg = tft.color565(80, 140, 80);
-    tft.fillRect(0, 80, 320, 40, bg);
+    uint16_t bg = h.tft.color565(80, 140, 80);
+    h.tft.fillRect(0, 80, 320, 40, bg);
     char buf[32];
     snprintf(buf, sizeof(buf), "%d min", book_session_minutes);
-    printTFTcentered(buf, tft.color565(255, 255, 255), 3, 0, 80, 320, 40);
-    tft.fillRect(0, 125, 320, 25, bg);
-    printTFTcentered("Min 10 min", tft.color565(230, 230, 230), 2, 0, 125, 320, 25);
+    printTFTcentered(buf, h.tft.color565(255, 255, 255), 3, 0, 80, 320, 40);
+    h.tft.fillRect(0, 125, 320, 25, bg);
+    printTFTcentered("Min 10 min", h.tft.color565(230, 230, 230), 2, 0, 125, 320, 25);
 }
 
 static void draw_book_session_screen(Menu& menu) {
@@ -212,7 +212,7 @@ static void draw_book_session_screen(Menu& menu) {
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_center_background(80, 140, 80);
 
-    printTFTcentered("Book session", tft.color565(255, 255, 255), 2, 0, 40, 320, 30);
+    printTFTcentered("Book session", h.tft.color565(255, 255, 255), 2, 0, 40, 320, 30);
     draw_book_session_values();
 
     draw_button_left((char*)"+5m | -5m");
@@ -236,7 +236,7 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
                 char errbuf[64] = {0};
                 if (start_session(last_scanned_access_key, resource_uuid.c_str(), &current_session, errbuf, sizeof(errbuf))) {
                     last_tick_ms = millis();
-                    relay_on();
+                    h.relay_on();
                     draw_machine_usage(menu);
                 } else {
                     const char* err = errbuf[0] ? errbuf : "Start session failed";
@@ -323,14 +323,14 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
                     clear_screen();
                     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
                     draw_center_background(60, 100, 140);
-                    printTFTcentered("Starting session...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
-                    printTFTcentered("Please wait", tft.color565(220, 220, 220), 2, 0, 100, 320, 30);
+                    printTFTcentered("Starting session...", h.tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+                    printTFTcentered("Please wait", h.tft.color565(220, 220, 220), 2, 0, 100, 320, 30);
                     // Give some margin so that started_at (set slightly in the future)
                     // is definitely in the past when we effectively start using the machine.
                     delay(5000);
                     if (start_session(last_scanned_access_key, resource_uuid.c_str(), &current_session, errbuf, sizeof(errbuf))) {
                         last_tick_ms = millis();
-                        relay_on();
+                        h.relay_on();
                         draw_machine_usage(menu);
                     } else {
                         const char* err = errbuf[0] ? errbuf : "Start session failed";
@@ -352,9 +352,9 @@ void select_menu(QRCodeGFX& qr, Menu& menu, Event ev) {
                 String resource_uuid = preferences.getString(UUID_KEY, "");
                 if (stop_session(resource_uuid.c_str())) {
                     clear_screen();
-                    printTFTcentered("exiting session...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+                    printTFTcentered("exiting session...", h.tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
                     delay(2000);
-                    relay_off();
+                    h.relay_off();
                     force_refresh_next_booking();
                     draw_scan_card(qr, menu);
                 } else {

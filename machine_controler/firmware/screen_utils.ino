@@ -5,23 +5,23 @@
 
 #include "firmware.h"
 
-// External reference to global tft object defined in firmware.ino
-extern Adafruit_ILI9341 tft;
+// Use the global hardware instance defined in firmware.ino
+extern hardware h;
 
 // TFT utils
 void printTFT(char* text, int16_t x, int16_t y, uint16_t color, uint8_t size) {
-    tft.setTextColor(color);
-    tft.setTextSize(size);
-    tft.setCursor(x, y);
-    tft.print(text);
+    h.tft.setTextColor(color);
+    h.tft.setTextSize(size);
+    h.tft.setCursor(x, y);
+    h.tft.print(text);
 }
 void printTFTBold(char* text, int16_t x, int16_t y, uint16_t color, uint8_t size) {
-    tft.setTextColor(color);
-    tft.setTextSize(size);
-    tft.setCursor(x, y);
-    tft.print(text);
-    tft.setCursor(x, y+1);
-    tft.print(text);
+    h.tft.setTextColor(color);
+    h.tft.setTextSize(size);
+    h.tft.setCursor(x, y);
+    h.tft.print(text);
+    h.tft.setCursor(x, y+1);
+    h.tft.print(text);
 }
 void printTFTcentered(
     const char* text,
@@ -43,28 +43,28 @@ void printTFTcentered(
     if (cy < ry) cy = ry;
 
     // Draw text
-    tft.setTextColor(color);
-    tft.setTextSize(size);
-    tft.setCursor(cx, cy);
-    tft.print(text);
+    h.tft.setTextColor(color);
+    h.tft.setTextSize(size);
+    h.tft.setCursor(cx, cy);
+    h.tft.print(text);
 }
 
 // drawing utils
 void draw_button_left(char* msg) {
-    tft.fillRect(0, 200, 155,  50, ILI9341_WHITE);
-    printTFTcentered(msg, tft.color565(0, 0, 0), 2, 0, 200, 155, 50);
+    h.tft.fillRect(0, 200, 155,  50, ILI9341_WHITE);
+    printTFTcentered(msg, h.tft.color565(0, 0, 0), 2, 0, 200, 155, 50);
 }
 void draw_button_right(char* msg) {
-    tft.fillRect(165, 200, 155,  50, ILI9341_WHITE);
-    printTFTcentered(msg, tft.color565(0, 0, 0), 2, 165, 200, 155, 50);
+    h.tft.fillRect(165, 200, 155,  50, ILI9341_WHITE);
+    printTFTcentered(msg, h.tft.color565(0, 0, 0), 2, 165, 200, 155, 50);
 }
 void draw_button_left(char* msg, uint8_t r, uint8_t g, uint8_t b) {
-    tft.fillRect(0, 200, 155,  50, tft.color565(r, g, b));
-    printTFTcentered(msg, tft.color565(0, 0, 0), 2, 0, 200, 155, 50);
+    h.tft.fillRect(0, 200, 155,  50, h.tft.color565(r, g, b));
+    printTFTcentered(msg, h.tft.color565(0, 0, 0), 2, 0, 200, 155, 50);
 }
 void draw_button_right(char* msg, uint8_t r, uint8_t g, uint8_t b) {
-    tft.fillRect(165, 200, 155,  50, tft.color565(r, g, b));
-    printTFTcentered(msg, tft.color565(0, 0, 0), 2, 165, 200, 155, 50);
+    h.tft.fillRect(165, 200, 155,  50, h.tft.color565(r, g, b));
+    printTFTcentered(msg, h.tft.color565(0, 0, 0), 2, 165, 200, 155, 50);
 }
 #define SCREEN_WIDTH      320
 
@@ -76,32 +76,32 @@ void draw_button_right(char* msg, uint8_t r, uint8_t g, uint8_t b) {
 
 // Draw only the top-right status zone (no full screen update): refresh icon or "SA" or blank
 void draw_title_right_status(bool refreshing) {
-    tft.fillRect(RIGHT_STATUS_X, RIGHT_STATUS_Y, RIGHT_STATUS_W, RIGHT_STATUS_H, ILI9341_BLACK);
+    h.tft.fillRect(RIGHT_STATUS_X, RIGHT_STATUS_Y, RIGHT_STATUS_W, RIGHT_STATUS_H, ILI9341_BLACK);
     if (refreshing) {
-        uint16_t color = tft.color565(100, 180, 255);
+        uint16_t color = h.tft.color565(100, 180, 255);
         int cx = RIGHT_STATUS_X + RIGHT_STATUS_W / 2;
         int cy = RIGHT_STATUS_Y + RIGHT_STATUS_H / 2;
-        tft.drawCircle(cx, cy, 6, color);
+        h.tft.drawCircle(cx, cy, 6, color);
         // Small arrow head (circular refresh hint) at top-right of circle
-        tft.drawLine(cx + 4, cy - 4, cx + 6, cy - 1, color);
-        tft.drawLine(cx + 6, cy - 1, cx + 3, cy + 2, color);
+        h.tft.drawLine(cx + 4, cy - 4, cx + 6, cy - 1, color);
+        h.tft.drawLine(cx + 6, cy - 1, cx + 3, cy + 2, color);
     } else if (wifi_connection_lost) {
-        tft.setTextColor(tft.color565(255, 200, 0));
-        tft.setTextSize(2);
-        tft.setCursor(RIGHT_STATUS_X + 4, 3);
-        tft.print("SA");
+        h.tft.setTextColor(h.tft.color565(255, 200, 0));
+        h.tft.setTextSize(2);
+        h.tft.setCursor(RIGHT_STATUS_X + 4, 3);
+        h.tft.print("SA");
     }
 }
 
 void draw_title(char* msg) {
-    printTFT(msg, 5, 3, tft.color565(255, 255, 255), 2);
+    printTFT(msg, 5, 3, h.tft.color565(255, 255, 255), 2);
     draw_title_right_status(false);
 }
 void draw_center_background(uint8_t r, uint8_t g, uint8_t b) {
-    tft.fillRect(0,  23, 320, 167, tft.color565(r, g, b));
+    h.tft.fillRect(0,  23, 320, 167, h.tft.color565(r, g, b));
 }
 void clear_screen(void) {
-    tft.fillScreen(ILI9341_BLACK);
+    h.tft.fillScreen(ILI9341_BLACK);
 }
 
 void format_hms(int total_sec, char* out, size_t out_size) {

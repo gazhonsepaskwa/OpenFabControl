@@ -10,7 +10,8 @@
 #include "firmware.h"
 #include "screen_utils.h"
 
-extern Adafruit_ILI9341 tft;
+// Use the global hardware instance defined in firmware.ino
+extern hardware h;
 
 // Parse RFC3339 UTC datetime (e.g. "2026-03-06T09:51:00Z") to Unix timestamp.
 static int64_t rfc3339_utc_to_unix(const char* s) {
@@ -216,7 +217,7 @@ void show_session_error(const char* msg) {
     clear_screen();
     draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
     draw_center_background(120, 60, 60);
-    printTFTcentered(msg ? msg : "Error", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+    printTFTcentered(msg ? msg : "Error", h.tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
 }
 
 bool get_max_add_time(const char* resource_uuid, int* out_max, char* err_msg, size_t err_size) {

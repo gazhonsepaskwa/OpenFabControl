@@ -6,6 +6,9 @@
 #include <Adafruit_ILI9341.h>       // screen
 #include <QRCodeGFX.h>
 
+// Hardware abstraction
+#include "hardware/hardware.h"
+
 enum Menu {
     INIT,
     SCAN_CARD,

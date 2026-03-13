@@ -8,12 +8,11 @@
 #include <HTTPClient.h>
 #include <esp_random.h>
 
-#include "pins.h"
-#include "screen_utils.h"
 #include "firmware.h"
+#include "screen_utils.h"
 
-extern Adafruit_ILI9341 tft;
-extern Adafruit_MCP23X17 mcp2;
+// External reference to global h object defined in firmware.ino
+extern hardware h;
 
 static const char ALNUM[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 #define ALNUM_LEN 62
@@ -41,8 +40,8 @@ static void show_error_and_restart(const char* msg) {
     clear_screen();
     draw_title((char*)"Setup Error");
     draw_center_background(120, 60, 60);
-    printTFTcentered(msg, tft.color565(255, 255, 255), 2, 0, 40, 320, 120);
-    printTFTcentered("Restart in 5s...", tft.color565(255, 255, 255), 2, 0, 120, 320, 30);
+    printTFTcentered(msg, h.tft.color565(255, 255, 255), 2, 0, 40, 320, 120);
+    printTFTcentered("Restart in 5s...", h.tft.color565(255, 255, 255), 2, 0, 120, 320, 30);
     delay(5000);
     ESP.restart();
 }
@@ -75,12 +74,12 @@ static void display_ap_instructions(const char* ap_ssid, const char* ap_pass) {
     clear_screen();
     draw_title((char*)"Setup");
     draw_center_background(60, 60, 120);
-    printTFTcentered("Connect to WiFi:", tft.color565(255, 255, 255), 2, 0, 25, 320, 22);
-    printTFTcentered(ap_ssid, tft.color565(255, 255, 255), 2, 0, 47, 320, 22);
-    printTFTcentered("Password:", tft.color565(255, 255, 255), 2, 0, 69, 320, 22);
-    printTFTcentered(ap_pass, tft.color565(255, 255, 255), 2, 0, 91, 320, 22);
-    printTFTcentered("Then open browser", tft.color565(255, 255, 255), 2, 0, 118, 320, 22);
-    printTFTcentered("and fill the form", tft.color565(255, 255, 255), 2, 0, 140, 320, 22);
+    printTFTcentered("Connect to WiFi:", h.tft.color565(255, 255, 255), 2, 0, 25, 320, 22);
+    printTFTcentered(ap_ssid, h.tft.color565(255, 255, 255), 2, 0, 47, 320, 22);
+    printTFTcentered("Password:", h.tft.color565(255, 255, 255), 2, 0, 69, 320, 22);
+    printTFTcentered(ap_pass, h.tft.color565(255, 255, 255), 2, 0, 91, 320, 22);
+    printTFTcentered("Then open browser", h.tft.color565(255, 255, 255), 2, 0, 118, 320, 22);
+    printTFTcentered("and fill the form", h.tft.color565(255, 255, 255), 2, 0, 140, 320, 22);
 }
 
 static void run_captive_portal_until_form(WebServer& server, DNSServer& dnsServer, SetupFormData& form_data) {
@@ -121,8 +120,8 @@ static void connect_to_sta_wifi(const SetupFormData& form_data, Preferences& pre
     clear_screen();
     draw_title((char*)"Setup");
     draw_center_background(60, 60, 120);
-    printTFTcentered("Connecting to WiFi...", tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
-    printTFTcentered(form_data.ssid, tft.color565(200, 200, 200), 2, 0, 100, 320, 25);
+    printTFTcentered("Connecting to WiFi...", h.tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+    printTFTcentered(form_data.ssid, h.tft.color565(200, 200, 200), 2, 0, 100, 320, 25);
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(form_data.ssid, form_data.password);
@@ -141,7 +140,7 @@ static int register_machine_to_api(const SetupFormData& form_data, Preferences& 
     clear_screen();
     draw_title((char*)"Setup");
     draw_center_background(60, 60, 120);
-    printTFTcentered("Registering...", tft.color565(255, 255, 255), 2, 0, 80, 320, 30);
+    printTFTcentered("Registering...", h.tft.color565(255, 255, 255), 2, 0, 80, 320, 30);
 
     char uuid[40];
     String stored = preferences.getString(UUID_KEY, "");
@@ -177,7 +176,7 @@ static void show_setup_complete(void) {
     clear_screen();
     draw_title((char*)"Setup");
     draw_center_background(60, 120, 60);
-    printTFTcentered("Setup complete", tft.color565(255, 255, 255), 2, 0, 80, 320, 30);
+    printTFTcentered("Setup complete", h.tft.color565(255, 255, 255), 2, 0, 80, 320, 30);
     delay(3000);
 }
 

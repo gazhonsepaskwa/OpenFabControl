@@ -6,6 +6,9 @@
 
 #include "firmware.h"
 
+// External reference to global h object defined in firmware.ino
+extern hardware h;
+
 bool approved_by_admin(Preferences& preferences) {
     String host = preferences.getString(MACHINE_API_HOST_KEY, "");
     String uuid = preferences.getString(UUID_KEY, "");
@@ -30,11 +33,11 @@ bool approved_by_admin(Preferences& preferences) {
         clear_screen();
         draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
         draw_center_background(120, 60, 60);
-        printTFTcentered("Error: machine deleted", tft.color565(255, 255, 255), 2, 0, 50, 320, 30);
-        printTFTcentered("Press any button to reset", tft.color565(255, 255, 255), 2, 0, 80, 320, 30);
-        printTFTcentered("Contact an admin", tft.color565(255, 255, 255), 2, 0, 110, 320, 30);
+        printTFTcentered("Error: machine deleted", h.tft.color565(255, 255, 255), 2, 0, 50, 320, 30);
+        printTFTcentered("Press any button to reset", h.tft.color565(255, 255, 255), 2, 0, 80, 320, 30);
+        printTFTcentered("Contact an admin", h.tft.color565(255, 255, 255), 2, 0, 110, 320, 30);
         while (true) {
-            if (mcp2.digitalRead(BTN_L) == LOW || mcp2.digitalRead(BTN_R) == LOW) {
+            if (h.mcp2.digitalRead(BTN_L) == LOW || h.mcp2.digitalRead(BTN_R) == LOW) {
                 preferences.clear();
                 ESP.restart();
             }
