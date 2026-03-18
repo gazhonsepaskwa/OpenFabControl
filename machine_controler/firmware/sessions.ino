@@ -11,7 +11,7 @@
 #include "screen_utils.h"
 
 // Use the global hardware instance defined in firmware.ino
-extern hardware h;
+extern OFC_Hardware h;
 
 // Parse RFC3339 UTC datetime (e.g. "2026-03-06T09:51:00Z") to Unix timestamp.
 static int64_t rfc3339_utc_to_unix(const char* s) {
@@ -140,77 +140,6 @@ bool stop_session(const char* resource_uuid) {
     http.end();
 
     return (code >= 200 && code < 300);
-}
-
-// Server must return the *current* ongoing booking if any (slot already started, not yet ended),
-// not only the next future one; otherwise the device shows FREE during an active booking.
-bool fetch_next_booking(NextBooking* out) {
-    if (!out) return false;
-
-    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
-    if (host.length() == 0) {
-        out->has_booking = false;
-        return false;
-    }
-
-    String resource_uuid = preferences.getString(UUID_KEY, "");
-    if (resource_uuid.length() == 0) {
-        out->has_booking = false;
-        return false;
-    }
-
-    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/next_booking";
-    String body = "{\"resource_uuid\":\"" + resource_uuid + "\"}";
-
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    http.begin(client, url);
-    http.addHeader("Content-Type", "application/json");
-    int code = http.POST(body);
-
-    if (code < 200 || code >= 300) {
-        http.end();
-        out->has_booking = false;
-        return false;
-    }
-
-    String payload = http.getString();
-    http.end();
-
-    JsonDocument doc;
-    if (deserializeJson(doc, payload)) {
-        out->has_booking = false;
-        return false;
-    }
-
-    if (!doc.containsKey("next_booking") || doc["next_booking"].isNull()) {
-        out->has_booking = false;
-        return true; // no future booking, but not an error
-    }
-
-    JsonObject nb = doc["next_booking"];
-
-    const char* start_s = nb["start_at"].as<const char*>();
-    const char* end_s = nb["end_at"].as<const char*>();
-    const char* user_s = nb["user_name"].as<const char*>();
-
-    out->start_unix = rfc3339_utc_to_unix(start_s);
-    out->end_unix = rfc3339_utc_to_unix(end_s);
-    if (user_s) {
-        strncpy(out->user_name, user_s, sizeof(out->user_name) - 1);
-        out->user_name[sizeof(out->user_name) - 1] = '\0';
-    } else {
-        out->user_name[0] = '\0';
-    }
-
-    if (out->start_unix <= 0 || out->end_unix <= 0 || out->end_unix <= out->start_unix) {
-        out->has_booking = false;
-        return true;
-    }
-
-    out->has_booking = true;
-    return true;
 }
 
 void show_session_error(const char* msg) {

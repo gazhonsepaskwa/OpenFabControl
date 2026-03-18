@@ -3,10 +3,10 @@
 #include <cstdio>
 #include <cstring>
 
-#include "firmware.h"
+#include <OFC_Hardware.h>
 
 // Use the global hardware instance defined in firmware.ino
-extern hardware h;
+extern OFC_Hardware h;
 
 // TFT utils
 void printTFT(char* text, int16_t x, int16_t y, uint16_t color, uint8_t size) {

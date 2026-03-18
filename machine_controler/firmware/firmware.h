@@ -4,29 +4,7 @@
 #include <DNSServer.h>
 #include <Adafruit_GFX.h>           // screen
 #include <Adafruit_ILI9341.h>       // screen
-#include <QRCodeGFX.h>
-
-// Hardware abstraction
-#include "hardware/hardware.h"
-
-enum Menu {
-    INIT,
-    SCAN_CARD,
-    MACHINE_INFO,
-    MACHINE_USAGE,
-    CONFIRM_FINISH,
-    ADD_TIME,
-    BOOK_SESSION
-};
-
-enum Event {
-    EVENT_BTN_LEFT,
-    EVENT_BTN_RIGHT,
-    EVENT_CARD,
-    EVENT_ANY,
-    EVENT_BTN_LEFT_LONG,
-    EVENT_BTN_RIGHT_LONG
-};
+///#include <QRCodeGFX.h>
 
 // Refresh interval (in minutes) for fetching next booking info
 #define NEXT_BOOKING_REFRESH_MINUTES       1
@@ -80,15 +58,8 @@ struct Session {
     char status[16];
 };
 
-struct NextBooking {
-    bool has_booking;
-    int64_t start_unix;
-    int64_t end_unix;
-    char user_name[33];
-};
-
 extern Session current_session;
-extern NextBooking next_booking;
+//extern NextBooking next_booking;
 extern unsigned long last_tick_ms;
 extern unsigned long last_next_booking_refresh_ms;
 extern bool wifi_connection_lost;
@@ -97,12 +68,10 @@ extern bool wifi_connection_lost;
 bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg = nullptr, size_t err_size = 0);
 bool stop_session(const char* resource_uuid);
 void show_session_error(const char* msg);
-bool fetch_next_booking(NextBooking* out);
+//bool fetch_next_booking(NextBooking* out);
 bool get_max_add_time(const char* resource_uuid, int* out_max, char* err_msg = nullptr, size_t err_size = 0);
 bool add_time(const char* resource_uuid, int add_minutes, Session* out, char* err_msg = nullptr, size_t err_size = 0);
 bool create_session(const char* access_key, const char* resource_uuid, int duration_minutes, Session* out, char* err_msg = nullptr, size_t err_size = 0);
-
-extern char last_scanned_access_key[32];
 
 // select_menu
 void select_menu(QRCodeGFX& qr, Menu& menu, Event button);

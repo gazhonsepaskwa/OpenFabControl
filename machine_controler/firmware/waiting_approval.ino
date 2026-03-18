@@ -7,7 +7,7 @@
 #include "firmware.h"
 
 // External reference to global h object defined in firmware.ino
-extern hardware h;
+extern OFC_Hardware h;
 
 bool approved_by_admin(Preferences& preferences) {
     String host = preferences.getString(MACHINE_API_HOST_KEY, "");

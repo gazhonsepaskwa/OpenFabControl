@@ -1,0 +1,14 @@
+#include "../../OFC_Ui.h"
+
+void OFC_Ui::menu_handler_xxx(Event ev) {
+    switch (ev) {
+        case Event::EVENT_BTN_LEFT :
+        case Event::EVENT_BTN_LEFT_LONG :
+        case Event::EVENT_BTN_RIGHT :
+        case Event::EVENT_BTN_RIGHT_LONG :
+        case Event::EVENT_CARD :
+        case Event::EVENT_NONE :
+        // case Event::EVENT_BTN_UP :
+        // case Event::EVENT_BTN_DOWN :
+    }
+}

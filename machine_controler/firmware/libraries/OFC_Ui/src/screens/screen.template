@@ -1,0 +1,10 @@
+#include "../../OFC_Ui.h"
+
+void OFC_Ui::draw_xxxxx() {
+    clear_screen();
+
+    // display code and logic
+    // ex: _tft->fillRect(0, 200, 155,  50, ILI9341_WHITE);
+
+    _menu = SCAN_CARD;
+}

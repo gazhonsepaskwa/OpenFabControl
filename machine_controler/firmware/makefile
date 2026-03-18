@@ -1,6 +1,6 @@
 compile:
 	 mkdir -p ./build
-	./bin/arduino-cli compile --fqbn esp32:esp32:esp32 . --build-path ./build
+	./bin/arduino-cli compile --libraries ./libraries --fqbn esp32:esp32:esp32 . --build-path ./build
 
 upload:
 	@if [ -z "$(PORT)" ]; then \

@@ -1,40 +1,33 @@
 #include <Arduino.h>                // General purpose instructions
 #include <WiFi.h>                   // before PN7150 (NdefMessage.h redefines WIFI_AUTH_OPEN)
-#include <time.h>
 #include <cstdio>
-#include <fstream>
+#include <Print.h>
+#include <HardwareSerial.h>
 #include <Preferences.h>
 
 #include "firmware.h"
-#include "screen_utils.h"
+#include <OFC_Hardware.h>
+OFC_Hardware h; // included as extern in other files
 
-// Single global hardware instance
-#include "hardware/hardware.h"
-hardware h; // include as extern in other files
+Preferences             g_preferences; // included as exterm in other files
+bool                    wifi_connection_lost = false;
 
-// Settings
-Preferences             preferences;
-
-// Session (from start_session API)
 Session                 current_session = {};
 unsigned long           last_tick_ms = 0;
-char                    last_scanned_access_key[32] = {0};
+char                    last_scanned_access_key[32] = {0}; // included as extern in other files
 
-// Next booking info
-NextBooking             next_booking = {};
-unsigned long           last_next_booking_refresh_ms = 0;
+// Network
+#include <OFC_Network.h>
+OFC_Network             network;
 
-// WiFi status (set in loop when disconnected; used to show "SA" (stand alone) on screen)
-bool                    wifi_connection_lost = false;
-unsigned long           last_wifi_check_ms = 0;
-unsigned long           last_wifi_reconnect_ms = 0;
+// Ui
+#include <OFC_Ui.h>
+OFC_Ui                  ui;
 
 // Other
-Menu menu = INIT;  // enum
-QRCodeGFX qr(h.tft);
 
 void clean_restart(void) {
-    preferences.end();
+    g_preferences.end();
     ESP.restart();
 }
 
@@ -46,146 +39,70 @@ void setup() {
     Serial.println("╚══════════════════════════════════════════╝");
     Serial.println("");
 
-    // Hardware init
-    h = hardware();
-
     // Open settings namespace (create if not exists)
-    preferences.begin("settings", false); // false => read & write
+    g_preferences.begin("settings", false); // false => read & write
+
+    // Hardware init
+    h = OFC_Hardware();
+
+    // Ui init
+    ui = OFC_Ui(g_preferences.getString(MACHINE_NAME_KEY).c_str(), &h.tft);
 
     // Setup process if settings not saved
     Serial.print("Setup process... ");
-    if (!preferences.getBool(SETUP_COMPLETED_KEY)) {
-        if (!setup_process(preferences)) {
+    if (!g_preferences.getBool(SETUP_COMPLETED_KEY)) {
+        if (!setup_process(g_preferences)) {
             clean_restart();
         }
     }
     Serial.println("OK");
 
-    // enterilly refactored till here
-
-    // Connect to WiFi
-    String sta_ssid = preferences.getString(WIFI_STA_SSID_KEY, "");
-    String sta_pass = preferences.getString(WIFI_STA_PASS_KEY, "");
-    if (sta_ssid.length() > 0) {
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
-        unsigned long start = millis();
-        while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000)
-            delay(200);
-
-        // set timezone
-        configTime(0, 0, "pool.ntp.org");
-        setenv("TZ", TZ_STRING, 1);
-        tzset();
-
-        // wait for NTP sync (needed for draw_scan_card to compute has_booking_today)
-        struct tm timeinfo;
-        int ntp_retries = 0;
-        while (!getLocalTime(&timeinfo) && ntp_retries++ < 30) {
-            delay(500);
-        }
-        if (!getLocalTime(&timeinfo)) {
-            Serial.println("WARN: NTP sync failed, time-based display may be wrong");
-        }
+    // Network init
+    // retreive wifi credentials from preferences (access once only)
+    // Note: reading from NVS is limmited in number of operations and should be done the least possible
+    String sta_ssid = g_preferences.getString(WIFI_STA_SSID_KEY, "");
+    String sta_pass = g_preferences.getString(WIFI_STA_PASS_KEY, "");
+    network = OFC_Network(sta_ssid, sta_pass, g_preferences.getString(UUID_KEY, ""), g_preferences.getString(MACHINE_API_HOST_KEY, ""));
+    network.connectToWifi();
+    if (network.isWifiConnected()) {
+        network.setTimezone();
     }
 
     // wait for server to approve the machine
     Serial.print("Approved...       ");
     int first_time = true;
-    while (!approved_by_admin(preferences)) {
+    // if not approved (or server not reachable) display waiting approval screen
+    // TODO : disociate the two
+    while (!approved_by_admin(g_preferences)) {
         if (first_time) {
             first_time = false;
-            clear_screen();
-            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
-            draw_center_background(60, 60, 120);
-            printTFTcentered("Waiting for approval...", h.tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
-            printTFTcentered("Please go to admin panel", h.tft.color565(255, 255, 255), 2, 0, 100, 320, 30);
-            printTFTcentered("and approve the machine.", h.tft.color565(255, 255, 255), 2, 0, 130, 320, 30);
+            ui.clear_screen();
+            ui.waiting_approval();
         }
         delay(5000);
     }
     Serial.println("OK");
 
     // start the interface
-    qr.setScale(2);  // 1 = default size, 2 = double, 3 = triple, etc.
-    force_refresh_next_booking();
-    select_menu(qr, menu, EVENT_ANY);
-}
-
-static bool next_booking_equals(const NextBooking& a, const NextBooking& b) {
-    if (a.has_booking != b.has_booking) return false;
-    if (a.start_unix != b.start_unix || a.end_unix != b.end_unix) return false;
-    return (strcmp(a.user_name, b.user_name) == 0);
-}
-
-void refresh_next_booking_if_needed(void) {
-    unsigned long now_ms = millis();
-    if ((now_ms - last_next_booking_refresh_ms) < NEXT_BOOKING_REFRESH_INTERVAL_MS) {
-        return;
-    }
-    // Refresh icon only when checking for next booking (scan card screen), no full screen update
-    if (menu == SCAN_CARD) {
-        draw_title_right_status(true);
-    }
-    NextBooking fetched = {};
-    if (!fetch_next_booking(&fetched)) {
-        if (menu == SCAN_CARD) draw_title_right_status(false);
-        return;
-    }
-    last_next_booking_refresh_ms = now_ms;
-    bool changed = !next_booking_equals(next_booking, fetched);
-    next_booking = fetched;
-    if (menu == SCAN_CARD) {
-        draw_title_right_status(false);
-        if (changed) {
-            draw_scan_card(qr, menu);
-        }
-    }
-}
-
-void force_refresh_next_booking(void) {
-    if (fetch_next_booking(&next_booking)) {
-        last_next_booking_refresh_ms = millis();
-    }
-}
-
-void check_wifi_and_reconnect(void) {
-    unsigned long now_ms = millis();
-    if (now_ms - last_wifi_check_ms < WIFI_CHECK_INTERVAL_MS)
-        return;
-    last_wifi_check_ms = now_ms;
-
-    if (WiFi.status() != WL_CONNECTED) {
-        if (!wifi_connection_lost) {
-            wifi_connection_lost = true;
-            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
-        }
-        if (now_ms - last_wifi_reconnect_ms >= WIFI_RECONNECT_INTERVAL_MS) {
-            last_wifi_reconnect_ms = now_ms;
-            String sta_ssid = preferences.getString(WIFI_STA_SSID_KEY, "");
-            String sta_pass = preferences.getString(WIFI_STA_PASS_KEY, "");
-            if (sta_ssid.length() > 0) {
-                WiFi.disconnect();
-                WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
-            }
-        }
-    } else {
-        if (wifi_connection_lost) {
-            wifi_connection_lost = false;
-            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
-        }
-    }
+    qr.setScale(2);  // 1 = default size, 2 = double, etc.
+    api.force_refresh_next_booking();
+    select_menu(qr, menu, EVENT_NONE);
 }
 
 void loop() {
-    bool btnL_state = h.mcp2.digitalRead(BTN_L);
-    bool btnR_state = h.mcp2.digitalRead(BTN_R);
+    // update button state
+    bool btnL_state = h.getButtonLeftState();
+    bool btnR_state = h.getButtonRightState();
 
-    check_wifi_and_reconnect();
+    // If wifi connection lost, reconnect
+    network.checkWifiAndReconnect();
 
-    // Periodic refresh of next booking info while on scan card screen
+    // Periodic refresh next booking info while on scan card screen
     if (menu == SCAN_CARD) {
-        refresh_next_booking_if_needed();
+        if (api.refresh_next_booking_if_needed()) {
+            // NextBooking nb = api.get_next_booking(); // ex of how to retreiv the value. i dont exactly know how i'll do, since i have to recreate the select menu.
+            ui.update_menu(EVENT_NONE);
+        }
     }
 
     // LEFT BTN EVENT
@@ -193,7 +110,7 @@ void loop() {
         unsigned long press_start = millis();
         // wait the button to be released
         while (btnL_state == LOW) {
-            btnL_state = h.mcp2.digitalRead(BTN_L);
+            btnL_state = h.getButtonLeftState();
         }
         unsigned long duration = millis() - press_start;
         Event ev;
@@ -210,7 +127,7 @@ void loop() {
         unsigned long press_start = millis();
         // wait the button to be released
         while (btnR_state == LOW) {
-            btnR_state = h.mcp2.digitalRead(BTN_R);
+            btnR_state = h.getButtonRightState();
         }
         unsigned long duration = millis() - press_start;
         Event ev;
@@ -248,8 +165,3 @@ void loop() {
     }
     h.nfc.reset();
 }
-
-// Include hardware implementation so that Arduino build system
-// (which may ignore .cpp files in subdirectories) links them properly.
-#include "hardware/init.cpp"
-#include "hardware/relay.cpp"

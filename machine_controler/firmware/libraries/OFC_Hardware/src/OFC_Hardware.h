@@ -6,13 +6,13 @@
 #include <Adafruit_ILI9341.h>       // TFT
 
 // hardware components pins definitions
-#include "hardware/pins.h"
+#include "pins.h"
 
 // hardware class definition
-class hardware {
+class OFC_Hardware {
     public: // constructor & destructor
-        hardware();
-        ~hardware();
+        OFC_Hardware();
+        ~OFC_Hardware();
 
     private: // methods
         void init_wire();
@@ -34,4 +34,6 @@ class hardware {
     public: // methods
         void relay_on(void);
         void relay_off(void);
+        bool getButtonLeftState();
+        bool getButtonRightState();
 };

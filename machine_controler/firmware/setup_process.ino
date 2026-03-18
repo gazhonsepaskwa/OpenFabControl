@@ -12,7 +12,7 @@
 #include "screen_utils.h"
 
 // External reference to global h object defined in firmware.ino
-extern hardware h;
+extern OFC_Hardware h;
 
 static const char ALNUM[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 #define ALNUM_LEN 62
