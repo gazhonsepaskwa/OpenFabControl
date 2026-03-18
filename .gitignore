@@ -1,3 +1,4 @@
 # Firmware artefact and compiler
 machine_controler/firmware/build
 machine_controler/firmware/bin
+.cache/
