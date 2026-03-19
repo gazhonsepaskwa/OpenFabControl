@@ -45,11 +45,17 @@ class OFC_Ui {
         void clear_screen();
         void waiting_approval();
         void update_menu(Event ev);
+        Menu get_menu();
 
     // Private Methodes ( Menu Handlers [ /handlers ] )
     private:
         void menu_handler_init(Event ev);
         void menu_handler_scan_card(Event ev);
+        void menu_handler_machine_info(Event ev);
+        void menu_handler_machine_usage(Event ev);
+        void menu_handler_add_time(Event ev);
+        void menu_handler_book_session(Event ev);
+        void menu_handler_confirm_finish(Event ev);
 
     // Private Methodes ( Screens [ /screens ] )
     private:

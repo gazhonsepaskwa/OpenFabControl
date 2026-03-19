@@ -3,6 +3,8 @@
 #include <string.h>
 #include "firmware.h"
 
+extern NextBooking g_next_booking;
+
 // Parse RFC3339 UTC datetime (e.g. "2026-03-06T09:51:00Z") to Unix timestamp.
 static int64_t rfc3339_utc_to_unix(const char* s) {
     if (!s || strlen(s) < 19) return 0;
@@ -126,8 +128,8 @@ bool Api::refresh_next_booking_if_needed(void) {
     last_next_booking_refresh_ms = now_ms;
 
     // check if something changed from last fetch
-    bool changed = !next_booking_equals(_next_booking, fetched);
-    _next_booking = fetched;
+    bool changed = !next_booking_equals(g_next_booking, fetched);
+    g_next_booking = fetched;
 
     return changed;
 }

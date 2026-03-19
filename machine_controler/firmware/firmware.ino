@@ -4,29 +4,28 @@
 #include <Print.h>
 #include <HardwareSerial.h>
 #include <Preferences.h>
-
 #include "firmware.h"
+
+// Lib includes
 #include <OFC_Hardware.h>
-OFC_Hardware h; // included as extern in other files
-
-Preferences             g_preferences; // included as exterm in other files
-bool                    wifi_connection_lost = false;
-
-Session                 current_session = {};
-unsigned long           last_tick_ms = 0;
-char                    last_scanned_access_key[32] = {0}; // included as extern in other files
-
-// Network
 #include <OFC_Network.h>
-OFC_Network             network;
-
-// Ui
 #include <OFC_Ui.h>
-OFC_Ui                  ui;
+
+OFC_Hardware g_hardware; // Hardware Lib
+OFC_Network g_network;   // Network Lib
+OFC_Ui g_ui;             // Ui Lib
+
+// Other global
+Preferences g_preferences;
+NextBooking g_next_booking;
+char g_last_scanned_access_key[32] = {0};
+Session g_current_session = {};
 
 // Other
+// bool wifi_connection_lost = false; // TODO i forgot what it is used for
+// unsigned long last_tick_ms = 0; // same here
 
-void clean_restart(void) {
+void clean_restart() {
     g_preferences.end();
     ESP.restart();
 }
@@ -43,10 +42,10 @@ void setup() {
     g_preferences.begin("settings", false); // false => read & write
 
     // Hardware init
-    h = OFC_Hardware();
+    g_hardware = OFC_Hardware();
 
     // Ui init
-    ui = OFC_Ui(g_preferences.getString(MACHINE_NAME_KEY).c_str(), &h.tft);
+    g_ui = OFC_Ui(g_preferences.getString(MACHINE_NAME_KEY).c_str(), &h.tft);
 
     // Setup process if settings not saved
     Serial.print("Setup process... ");
@@ -62,10 +61,10 @@ void setup() {
     // Note: reading from NVS is limmited in number of operations and should be done the least possible
     String sta_ssid = g_preferences.getString(WIFI_STA_SSID_KEY, "");
     String sta_pass = g_preferences.getString(WIFI_STA_PASS_KEY, "");
-    network = OFC_Network(sta_ssid, sta_pass, g_preferences.getString(UUID_KEY, ""), g_preferences.getString(MACHINE_API_HOST_KEY, ""));
-    network.connectToWifi();
-    if (network.isWifiConnected()) {
-        network.setTimezone();
+    g_network = OFC_Network(sta_ssid, sta_pass, g_preferences.getString(UUID_KEY, ""), g_preferences.getString(MACHINE_API_HOST_KEY, ""));
+    g_network.connectToWifi();
+    if (g_network.isWifiConnected()) {
+        g_network.setTimezone();
     }
 
     // wait for server to approve the machine
@@ -73,95 +72,108 @@ void setup() {
     int first_time = true;
     // if not approved (or server not reachable) display waiting approval screen
     // TODO : disociate the two
-    while (!approved_by_admin(g_preferences)) {
+    while (!g_network.api->is_approved_by_admin(g_preferences)) { // TODO
         if (first_time) {
             first_time = false;
-            ui.clear_screen();
-            ui.waiting_approval();
+            g_ui.clear_screen();
+            g_ui.waiting_approval();
         }
         delay(5000);
     }
     Serial.println("OK");
 
     // start the interface
-    qr.setScale(2);  // 1 = default size, 2 = double, etc.
-    api.force_refresh_next_booking();
-    select_menu(qr, menu, EVENT_NONE);
+    g_network.api->force_refresh_next_booking();
+    g_ui.update_menu(EVENT_NONE);
 }
 
 void loop() {
-    // update button state
-    bool btnL_state = h.getButtonLeftState();
-    bool btnR_state = h.getButtonRightState();
+    ////////////
+    // checks //
+    ////////////
 
     // If wifi connection lost, reconnect
-    network.checkWifiAndReconnect();
+    g_network.checkWifiAndReconnect();
 
     // Periodic refresh next booking info while on scan card screen
-    if (menu == SCAN_CARD) {
-        if (api.refresh_next_booking_if_needed()) {
-            // NextBooking nb = api.get_next_booking(); // ex of how to retreiv the value. i dont exactly know how i'll do, since i have to recreate the select menu.
-            ui.update_menu(EVENT_NONE);
+    if (g_ui.get_menu() == SCAN_CARD) {
+        if (g_network.api->refresh_next_booking_if_needed()) {
+            g_next_booking = g_network.api->get_next_booking();
+            g_ui.update_menu(EVENT_NONE);
         }
     }
 
+    // Update machine usage time display every second
+    else if (menu == MACHINE_USAGE && (millis() - last_tick_ms) >= 1000) {
+            update_machine_usage_times();
+            last_tick_ms = millis();
+    }
+
+    /////////////////////
+    // updates (EVENT) //
+    /////////////////////
+
+    // update button state
+    bool btnL_state = g_hardware.getButtonLeftState();
+    bool btnR_state = g_hardware.getButtonRightState();
+
     // LEFT BTN EVENT
     if (btnL_state == LOW) {
+        // g_harware.getButtonLeftPressTime(); // TODO move to a fct maybe
         unsigned long press_start = millis();
         // wait the button to be released
         while (btnL_state == LOW) {
+            // maybe do something on the UI so the user now he need unpress the button
             btnL_state = h.getButtonLeftState();
         }
         unsigned long duration = millis() - press_start;
-        Event ev;
+        // up to here
+
         if ((menu == ADD_TIME || menu == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
             ev = EVENT_BTN_LEFT_LONG;
+            ui.update_menu(EVENT_BTN_LEFT_LONG);
         } else {
-            ev = EVENT_BTN_LEFT;
+            ui.update_menu(EVENT_BTN_LEFT);
         }
-        select_menu(qr, menu, ev);
+        // or maybe here
     }
 
     // RIGHT BTN EVENT
     else if (btnR_state == LOW) {
+        // same here as over
         unsigned long press_start = millis();
         // wait the button to be released
         while (btnR_state == LOW) {
             btnR_state = h.getButtonRightState();
         }
         unsigned long duration = millis() - press_start;
-        Event ev;
+
         if ((menu == ADD_TIME || menu == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
-            ev = EVENT_BTN_RIGHT_LONG;
+            ui.update_menu(EVENT_BTN_RIGHT_LONG);
         } else {
-            ev = EVENT_BTN_RIGHT;
+            ui.update_menu(EVENT_BTN_RIGHT);
         }
-        select_menu(qr, menu, ev);
     }
 
     // CARD EVENT
-    else if (h.nfc.isTagDetected(20)) {
-        if (h.nfc.remoteDevice.hasMoreTags()) {
-            Serial.println("todo: error msg for only one tag at the time");
+    else if (g_harware.nfc.isTagDetected(20)) {
+        if (g_harware.nfc.remoteDevice.hasMoreTags()) {
+            Serial.println("todo: error msg for only one tag at the time"); // TODO
         }
-        const unsigned char* uid = h.nfc.remoteDevice.getNFCID();
-        unsigned char uid_len = h.nfc.remoteDevice.getNFCIDLen();
+        const unsigned char* uid = g_harware.nfc.remoteDevice.getNFCID();
+        unsigned char uid_len = g_harware.nfc.remoteDevice.getNFCIDLen();
         // convert uid to string (hexa)
         if (uid && uid_len > 0 && uid_len <= 15) {
             for (unsigned char i = 0; i < uid_len; i++) {
-                snprintf(last_scanned_access_key + i * 2, 4, "%02X", uid[i]);
+                snprintf(g_last_scanned_access_key + i * 2, 4, "%02X", uid[i]);
             }
-            last_scanned_access_key[uid_len * 2] = '\0';
+            g_last_scanned_access_key[uid_len * 2] = '\0'; // TODO why * 2 ?
         } else {
-            last_scanned_access_key[0] = '\0';
+            g_last_scanned_access_key[0] = '\0';
         }
-        h.nfc.waitForTagRemoval();
-        select_menu(qr, menu, EVENT_CARD);
+        g_harware.nfc.waitForTagRemoval();
+        ui.update_menu(EVENT_CARD);
     }
-    // Update machine usage time display every second
-    else if (menu == MACHINE_USAGE && (millis() - last_tick_ms) >= 1000) {
-        update_machine_usage_times();
-        last_tick_ms = millis();
-    }
+
     h.nfc.reset();
 }

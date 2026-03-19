@@ -12,6 +12,23 @@ struct NextBooking {
     char user_name[33];
 };
 
+struct SetupFormData {
+    char machine_name[33];
+    char ssid[33];
+    char password[65];
+    char api_host[129];
+};
+
+struct Session {
+    int id;
+    int user_id;
+    char resource_uuid[40];
+    int64_t started_at_unix;
+    int64_t ended_at_unix;
+    int time_used;
+    char status[16];
+};
+
 class Api {
     // Constructor / Destructor
     public:
@@ -25,8 +42,6 @@ class Api {
         String              _host;
         WiFiClientSecure    _client;
         HTTPClient          _http;
-        // others
-        NextBooking         _next_booking = {};
 
     // Privates Methodes
     private:

@@ -63,9 +63,9 @@ void OFC_Ui::draw_scan_card() {
         }
     }
 
-    printTFTcentered("Scan card", h.tft.color565(0, 0, 0), 2, 0, 90, 160, 30);
-    printTFTcentered("to unlock", h.tft.color565(0, 0, 0), 2, 0, 110, 160, 30);
-    printTFTcentered("Or book here",   h.tft.color565(0, 0, 0), 2, 160, 150, 160, 30);
+    printTFTcentered("Scan card", _tft->color565(0, 0, 0), 2, 0, 90, 160, 30);
+    printTFTcentered("to unlock", _tft->color565(0, 0, 0), 2, 0, 110, 160, 30);
+    printTFTcentered("Or book here", _tft->color565(0, 0, 0), 2, 160, 150, 160, 30);
     _qr->draw("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 200, 75);
 
     _menu = SCAN_CARD;

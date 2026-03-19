@@ -1,7 +1,7 @@
 #include "OFC_Ui.h"
 #include "QRCodeGFX.h"
 
-// Constructor (only for global declaration)
+// Default constructor (only for global declaration)
 OFC_Ui::OFC_Ui()
     :   _machine_name(""),
         _tft(0x0),
@@ -13,8 +13,9 @@ OFC_Ui::OFC_Ui(String machine_name, Adafruit_ILI9341* tft)
     :   _machine_name(machine_name),
         _tft(tft),
         _qr(new QRCodeGFX(*tft)),
-        _menu(INIT)
-{}
+        _menu(INIT) {
+    _qr->setScale(2);  // 1 = default size, 2 = double, etc.
+}
 
 OFC_Ui::~OFC_Ui() {
     if (_qr) { delete _qr; }
@@ -38,4 +39,8 @@ void OFC_Ui::waiting_approval() {
     _tft->print("Please go to admin panel");
     _tft->setCursor(92, 154);
     _tft->print("and approve the machine");
+}
+
+Menu OFC_Ui::get_menu() {
+    return _menu;
 }
