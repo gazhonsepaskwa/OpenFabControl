@@ -35,8 +35,10 @@ func Setup_routes() {
 	http.HandleFunc("/web-admin-api/get_resource_list_to_approve", resource_handler.Get_resource_list_to_approve)
 	http.HandleFunc("/web-admin-api/get_resource_list_approved", resource_handler.Get_resource_list_approved)
 	http.HandleFunc("/web-admin-api/approve_resource", resource_handler.Approve_resource)
+	http.HandleFunc("/web-admin-api/unapprove_resource", resource_handler.Unapprove_resource)
 	http.HandleFunc("/web-admin-api/delete_resource", resource_handler.Delete_resource)
 	http.HandleFunc("/web-admin-api/edit_resource", resource_handler.Edit_resource)
+
 	http.HandleFunc("/web-admin-api/create_session", session_handler.Create_session)
 
 	// users

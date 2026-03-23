@@ -145,8 +145,8 @@ function DevicesPanel() {
     setError(null);
     try {
       const [notApprovedRes, approvedRes] = await Promise.all([
-        fetch(`${API_BASE}/get_machine_controler_list_to_approve`),
-        fetch(`${API_BASE}/get_machine_controler_list_approved`),
+        fetch(`${API_BASE}/get_resource_list_to_approve`),
+        fetch(`${API_BASE}/get_resource_list_approved`),
       ]);
 
       if (!notApprovedRes.ok || !approvedRes.ok) {
@@ -179,7 +179,7 @@ function DevicesPanel() {
 
   const handleApprove = async (uuid: string) => {
     try {
-      const res = await fetch(`${API_BASE}/approve_machine_controler`, {
+      const res = await fetch(`${API_BASE}/approve_resource`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuid }),
@@ -198,7 +198,7 @@ function DevicesPanel() {
 
   const handleUnapprove = async (uuid: string) => {
     try {
-      const res = await fetch(`${API_BASE}/unapprove_machine_controler`, {
+      const res = await fetch(`${API_BASE}/unapprove_resource`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuid }),

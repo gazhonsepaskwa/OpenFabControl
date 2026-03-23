@@ -235,6 +235,25 @@ Approves a machine controller.
 
 ---
 
+### POST /web-admin-api/unapprove_resource
+Moves an approved machine controller back to pending approval.
+
+**Input (JSON):**
+| Parameter | Type   | Required |
+|-----------|--------|----------|
+| uuid      | string | yes      |
+
+**Outputs:**
+| Code | Body                                                                  |
+|------|-----------------------------------------------------------------------|
+| 200  | `{"msg":"Machine controler unapproved successfully"}`                 |
+| 404  | `{"error":"No device with this UUID"}`                               |
+| 400  | `{"error":"invalid payload: uuid cannot be empty"}`                  |
+| 405  | `{"error":"Method not allowed"}`                                     |
+| 500  | `{"error":"Internal Server Error"}`                                  |
+
+---
+
 ### DELETE /web-admin-api/delete_resource
 Deletes a machine controller.
 

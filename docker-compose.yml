@@ -1,0 +1,65 @@
+services:
+  controle_server:
+    build:
+      context: ./controle_server
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      JWT_TOKEN: ${JWT_TOKEN:-dev-token}
+      CONTROLE_SERVER_PORT: ${CONTROLE_SERVER_PORT:-3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web_admin:
+    build:
+      context: ./web_admin
+      dockerfile: Dockerfile
+    depends_on:
+      - controle_server
+    environment:
+      VITE_PROXY_TARGET: http://controle_server:3000
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    depends_on:
+      - controle_server
+      - web_admin
+    env_file:
+      - .env
+    environment:
+      ENABLE_SSL_ON_NGINX: ${ENABLE_SSL_ON_NGINX:-true}
+    ports:
+      - "4080:443"
+
+  postgres:
+    image: postgres:15
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+volumes:
+  pgdata:
+    driver: local
