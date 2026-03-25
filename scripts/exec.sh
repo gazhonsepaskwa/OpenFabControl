@@ -1,0 +1,1 @@
+docker compose exec -T postgres psql -U user -d ofc_db < "./seed_fablab.sql"

@@ -40,6 +40,7 @@ func Setup_routes() {
 	http.HandleFunc("/web-admin-api/edit_resource", resource_handler.Edit_resource)
 
 	http.HandleFunc("/web-admin-api/create_session", session_handler.Create_session)
+	http.HandleFunc("/web-admin-api/fetch_booking", session_handler.Fetch_booking)
 
 	// users
 	http.HandleFunc("/web-admin-api/create_user", user_handler.Create_user)
@@ -62,6 +63,8 @@ func Setup_routes() {
 
 	http.HandleFunc("/web-user-api/user_one_time_setup", user_handler.User_one_time_setup)
 	http.HandleFunc("/web-user-api/create_session", session_handler.Create_session)
+	http.HandleFunc("/web-user-api/fetch_booking", session_handler.Fetch_booking)
+	http.HandleFunc("/web-user-api/fetch_my_booking", session_handler.Fetch_my_booking)
 	http.HandleFunc("/web-user-api/login", user_handler.Login)
 
 	///////////

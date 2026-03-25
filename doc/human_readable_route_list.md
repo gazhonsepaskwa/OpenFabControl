@@ -312,6 +312,27 @@ Creates a session (admin side, user_id identification).
 
 ---
 
+### POST /web-admin-api/fetch_booking
+Fetches bookings in a required timeframe, with optional resource and user filters.
+
+**Input (JSON):**
+| Parameter          | Type       | Required | Description |
+|--------------------|------------|----------|-------------|
+| started_at         | string     | yes      | RFC3339 start of timeframe |
+| ended_at           | string     | yes      | RFC3339 end of timeframe (must be after started_at) |
+| resource_uuid_list | string[]   | no       | If omitted/empty: all resources |
+| user_id_list       | int[]      | no       | If omitted/empty: all users |
+
+**Outputs:**
+| Code | Body |
+|------|------|
+| 200  | `{"sessions":[{id,user_id,resource_uuid,started_at,ended_at,time_used,status},...]}` |
+| 400  | `{"error":"invalid payload: started_at/ended_at ..."}` |
+| 405  | `{"error":"Method not allowed"}` |
+| 500  | `{"error":"Internal Server Error"}` |
+
+---
+
 ### Users
 
 ### POST /web-admin-api/create_user
@@ -550,6 +571,49 @@ Initial account setup (one-time only).
 
 ### POST /web-user-api/create_session
 Creates a session (user side, user_id identification). Same inputs/outputs as admin create_session.
+
+---
+
+### POST /web-user-api/fetch_booking
+Fetches bookings in a required timeframe, optionally filtered by resources (all users included).
+
+**Input (JSON):**
+| Parameter          | Type       | Required | Description |
+|--------------------|------------|----------|-------------|
+| started_at         | string     | yes      | RFC3339 start of timeframe |
+| ended_at           | string     | yes      | RFC3339 end of timeframe (must be after started_at) |
+| resource_uuid_list | string[]   | no       | If omitted/empty: all resources |
+
+**Outputs:**
+| Code | Body |
+|------|------|
+| 200  | `{"sessions":[{id,user_id,resource_uuid,started_at,ended_at,time_used,status},...]}` |
+| 400  | `{"error":"invalid payload: started_at/ended_at ..."}` |
+| 405  | `{"error":"Method not allowed"}` |
+| 500  | `{"error":"Internal Server Error"}` |
+
+---
+
+### POST /web-user-api/fetch_my_booking
+Fetches bookings for the authenticated user only, in a required timeframe, optionally filtered by resources.
+
+**Auth:** `Authorization: Bearer <JWT>`
+
+**Input (JSON):**
+| Parameter          | Type       | Required | Description |
+|--------------------|------------|----------|-------------|
+| started_at         | string     | yes      | RFC3339 start of timeframe |
+| ended_at           | string     | yes      | RFC3339 end of timeframe (must be after started_at) |
+| resource_uuid_list | string[]   | no       | If omitted/empty: all resources |
+
+**Outputs:**
+| Code | Body |
+|------|------|
+| 200  | `{"sessions":[{id,user_id,resource_uuid,started_at,ended_at,time_used,status},...]}` |
+| 400  | `{"error":"invalid payload: started_at/ended_at ..."}` |
+| 401  | `{"error":"Invalid token"}` |
+| 405  | `{"error":"Method not allowed"}` |
+| 500  | `{"error":"Internal Server Error"}` |
 
 ---
 

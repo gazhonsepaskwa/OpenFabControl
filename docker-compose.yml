@@ -60,6 +60,15 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
 volumes:
   pgdata:
     driver: local
