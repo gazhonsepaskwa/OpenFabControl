@@ -15,9 +15,9 @@ void OFC_Ui::menu_handler_book_session(Event ev) {
         char errbuf[64] = {0};
         if (create_session(last_scanned_access_key, resource_uuid.c_str(), book_session_minutes, &current_session, errbuf, sizeof(errbuf))) {
             clear_screen();
-            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+            draw_title((char*)_machine_name.c_str());
             draw_center_background(60, 100, 140);
-            printTFTcentered("Starting session...", h.tft.color565(255, 255, 255), 2, 0, 70, 320, 30);
+            printTFTcentered("Starting session...", _tft->color565(255, 255, 255), 2, 0, 70, 320, 30);
             printTFTcentered("Please wait", h.tft.color565(220, 220, 220), 2, 0, 100, 320, 30);
             // Give some margin so that started_at (set slightly in the future)
             // is definitely in the past when we effectively start using the machine.

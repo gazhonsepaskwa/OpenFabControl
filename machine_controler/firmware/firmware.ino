@@ -12,18 +12,17 @@
 #include <OFC_Ui.h>
 
 OFC_Hardware g_hardware; // Hardware Lib
-OFC_Network g_network;   // Network Lib
-OFC_Ui g_ui;             // Ui Lib
+OFC_Network  g_network;  // Network Lib
+OFC_Ui       g_ui;       // Ui Lib
 
 // Other global
-Preferences g_preferences;
-NextBooking g_next_booking;
-char g_last_scanned_access_key[32] = {0};
-Session g_current_session = {};
+Preferences  g_preferences;
+NextBooking  g_next_booking;
+char         g_last_scanned_access_key[32] = {0};
+Session      g_current_session = {};
 
 // Other
 // bool wifi_connection_lost = false; // TODO i forgot what it is used for
-// unsigned long last_tick_ms = 0; // same here
 
 void clean_restart() {
     g_preferences.end();
@@ -45,7 +44,10 @@ void setup() {
     g_hardware = OFC_Hardware();
 
     // Ui init
-    g_ui = OFC_Ui(g_preferences.getString(MACHINE_NAME_KEY).c_str(), &h.tft);
+    g_ui = OFC_Ui(  g_preferences.getString(MACHINE_NAME_KEY).c_str(),
+                    &g_hardware.tft,
+                    g_network.api->get_next_booking()
+                  );
 
     // Setup process if settings not saved
     Serial.print("Setup process... ");
@@ -104,9 +106,8 @@ void loop() {
     }
 
     // Update machine usage time display every second
-    else if (menu == MACHINE_USAGE && (millis() - last_tick_ms) >= 1000) {
-            update_machine_usage_times();
-            last_tick_ms = millis();
+    else if (g_ui.get_menu() == MACHINE_USAGE) {
+        g_ui.update_machine_usage_times();
     }
 
     /////////////////////
@@ -124,16 +125,15 @@ void loop() {
         // wait the button to be released
         while (btnL_state == LOW) {
             // maybe do something on the UI so the user now he need unpress the button
-            btnL_state = h.getButtonLeftState();
+            btnL_state = g_hardware.getButtonLeftState();
         }
         unsigned long duration = millis() - press_start;
         // up to here
 
-        if ((menu == ADD_TIME || menu == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
-            ev = EVENT_BTN_LEFT_LONG;
-            ui.update_menu(EVENT_BTN_LEFT_LONG);
+        if ((g_ui.get_menu() == ADD_TIME || g_ui.get_menu() == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
+            g_ui.update_menu(EVENT_BTN_LEFT_LONG);
         } else {
-            ui.update_menu(EVENT_BTN_LEFT);
+            g_ui.update_menu(EVENT_BTN_LEFT);
         }
         // or maybe here
     }
@@ -144,24 +144,24 @@ void loop() {
         unsigned long press_start = millis();
         // wait the button to be released
         while (btnR_state == LOW) {
-            btnR_state = h.getButtonRightState();
+            btnR_state = g_hardware.getButtonRightState();
         }
         unsigned long duration = millis() - press_start;
 
-        if ((menu == ADD_TIME || menu == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
-            ui.update_menu(EVENT_BTN_RIGHT_LONG);
+        if ((g_ui.get_menu() == ADD_TIME || g_ui.get_menu() == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
+            g_ui.update_menu(EVENT_BTN_RIGHT_LONG);
         } else {
-            ui.update_menu(EVENT_BTN_RIGHT);
+            g_ui.update_menu(EVENT_BTN_RIGHT);
         }
     }
 
     // CARD EVENT
-    else if (g_harware.nfc.isTagDetected(20)) {
-        if (g_harware.nfc.remoteDevice.hasMoreTags()) {
+    else if (g_hardware.nfc.isTagDetected(20)) {
+        if (g_hardware.nfc.remoteDevice.hasMoreTags()) {
             Serial.println("todo: error msg for only one tag at the time"); // TODO
         }
-        const unsigned char* uid = g_harware.nfc.remoteDevice.getNFCID();
-        unsigned char uid_len = g_harware.nfc.remoteDevice.getNFCIDLen();
+        const unsigned char* uid = g_hardware.nfc.remoteDevice.getNFCID();
+        unsigned char uid_len = g_hardware.nfc.remoteDevice.getNFCIDLen();
         // convert uid to string (hexa)
         if (uid && uid_len > 0 && uid_len <= 15) {
             for (unsigned char i = 0; i < uid_len; i++) {
@@ -171,9 +171,10 @@ void loop() {
         } else {
             g_last_scanned_access_key[0] = '\0';
         }
-        g_harware.nfc.waitForTagRemoval();
-        ui.update_menu(EVENT_CARD);
+        g_hardware.nfc.waitForTagRemoval();
+        g_ui.update_menu(EVENT_CARD);
     }
 
-    h.nfc.reset();
+    g_hardware.nfc.reset();
 }
+

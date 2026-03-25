@@ -1,4 +1,5 @@
 #pragma once
+#include "OFC_Network.h"
 #include <Adafruit_ILI9341.h>
 #include <Arduino.h>
 #include <QRCodeGFX.h>
@@ -29,22 +30,26 @@ class OFC_Ui {
     // Constructor destructor
     public:
         OFC_Ui();
-        OFC_Ui(String machine_name, Adafruit_ILI9341* tft);
+        OFC_Ui(String machine_name, Adafruit_ILI9341* tft, NextBooking* next_booking);
        ~OFC_Ui();
 
     // Attribut
     private:
         String              _machine_name;
-        Adafruit_ILI9341*   _tft;
-        // menu selection
-        QRCodeGFX*          _qr;
+        Adafruit_ILI9341*   _tft; // poiter to OFC_Hardware::_tft
+        // ~ menu ~
         Menu                _menu;
+        QRCodeGFX*          _qr;
+        NextBooking*        _next_booking; // pointer to OFC_Hardware::_next_booking
+        // timers ( millis() val )
+        unsigned long       _last_machine_usage_time_update_ms;
 
-    // Methodes
+    // Public Methodes
     public:
         void clear_screen();
         void waiting_approval();
         void update_menu(Event ev);
+        void update_machine_usage_times();
         Menu get_menu();
 
     // Private Methodes ( Menu Handlers [ /handlers ] )
@@ -60,6 +65,16 @@ class OFC_Ui {
     // Private Methodes ( Screens [ /screens ] )
     private:
         void draw_scan_card();
+        void draw_machine_usage();
+        void draw_machine_usage_times_inner();
+        void draw_machine_info();
+        void draw_add_time();
+        void draw_confirm_finish();
+        void draw_book_session();
+
+        // TODO see if i expose those or make a wraper (probably a wraper)
+            // void draw_book_session_values();
+            // void draw_add_time_values();
 };
 
 // If you see this, thanks for reading my code :D

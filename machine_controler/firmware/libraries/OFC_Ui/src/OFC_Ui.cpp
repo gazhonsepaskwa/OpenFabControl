@@ -1,4 +1,5 @@
 #include "OFC_Ui.h"
+#include "OFC_Network.h" // For next_booking
 #include "QRCodeGFX.h"
 
 // Default constructor (only for global declaration)
@@ -9,11 +10,12 @@ OFC_Ui::OFC_Ui()
 {}
 
 // Constructor
-OFC_Ui::OFC_Ui(String machine_name, Adafruit_ILI9341* tft)
+OFC_Ui::OFC_Ui(String machine_name, Adafruit_ILI9341* tft, NextBooking* next_booking)
     :   _machine_name(machine_name),
         _tft(tft),
         _qr(new QRCodeGFX(*tft)),
-        _menu(INIT) {
+        _menu(INIT),
+        _next_booking(next_booking){
     _qr->setScale(2);  // 1 = default size, 2 = double, etc.
 }
 
