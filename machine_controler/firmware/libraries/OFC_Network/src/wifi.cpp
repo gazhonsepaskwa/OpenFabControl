@@ -1,9 +1,9 @@
 #include "OFC_Network.h"
 #include <WiFi.h>
 #include "firmware.h"
-#include "screen_utils.h"
 
 extern Preferences preferences;
+extern bool wifi_connection_lost;
 
 void OFC_Network::connectToWifi() {
     WiFi.mode(WIFI_STA);
@@ -41,7 +41,6 @@ void OFC_Network::checkWifiAndReconnect() {
     if (WiFi.status() != WL_CONNECTED) {
         if (!wifi_connection_lost) {
             wifi_connection_lost = true;
-            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
         }
         if (now_ms - this->last_wifi_reconnect_ms >= WIFI_RECONNECT_INTERVAL_MS) {
             this->last_wifi_reconnect_ms = now_ms;
@@ -53,7 +52,6 @@ void OFC_Network::checkWifiAndReconnect() {
     } else {
         if (wifi_connection_lost) {
             wifi_connection_lost = false;
-            draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
         }
     }
 }

@@ -111,16 +111,12 @@ bool Api::refresh_next_booking_if_needed(void) {
         return false;
     }
 
-    // Refresh icon only when checking for next booking (scan card screen), no full screen update
-    //if (menu == SCAN_CARD) {
-    //    draw_title_right_status(true);
-    //}
+    // (UI status indicator removed to avoid cross-module dependencies)
 
     NextBooking fetched = {};
 
     // returne false if error
     if (!this->fetchNextBooking(&fetched)) {
-        // if (menu == SCAN_CARD) draw_title_right_status(false);
         return false;
     }
 

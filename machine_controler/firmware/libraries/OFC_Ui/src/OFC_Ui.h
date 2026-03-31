@@ -48,10 +48,31 @@ class OFC_Ui {
     public:
         void clear_screen();
         void waiting_approval();
+        void show_error_screen(const char* msg);
+        void show_setup_error_and_restart(const char* msg);
+        void show_setup_ap_instructions(const char* ap_ssid, const char* ap_pass);
+        void show_setup_connecting_wifi(const char* ssid);
+        void show_setup_registering();
+        void show_setup_complete();
         void update_menu(Event ev);
         void update_machine_usage_times();
         Menu get_menu();
 
+
+    // Temporary utils: screen helpers until lopaka.app is fully used
+    private:
+        void printTFT(const char* text, int16_t x, int16_t y, uint16_t color, uint8_t size);
+        void printTFTBold(const char* text, int16_t x, int16_t y, uint16_t color, uint8_t size);
+        void printTFTcentered(const char* text, uint16_t color, uint8_t size, uint16_t rx, uint16_t ry, uint16_t rw, uint16_t rh);
+
+        void draw_button_left(const char* msg);
+        void draw_button_right(const char* msg);
+        void draw_button_left(const char* msg, uint8_t r, uint8_t g, uint8_t b);
+        void draw_button_right(const char* msg, uint8_t r, uint8_t g, uint8_t b);
+        void draw_title(const char* msg);
+        void draw_center_background(uint8_t r, uint8_t g, uint8_t b);
+        void format_hms(int total_sec, char* out, size_t out_size);
+    
     // Private Methodes ( Menu Handlers [ /handlers ] )
     private:
         void menu_handler_init(Event ev);

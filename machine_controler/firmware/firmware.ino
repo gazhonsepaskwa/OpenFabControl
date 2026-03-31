@@ -4,6 +4,8 @@
 #include <Print.h>
 #include <HardwareSerial.h>
 #include <Preferences.h>
+#include "libraries/OFC_Setup_process/src/OFC_Setup_process.h"
+#include "preference_keys.h"
 #include "firmware.h"
 
 // Lib includes
@@ -22,7 +24,7 @@ char         g_last_scanned_access_key[32] = {0};
 Session      g_current_session = {};
 
 // Other
-// bool wifi_connection_lost = false; // TODO i forgot what it is used for
+bool wifi_connection_lost = false;
 
 void clean_restart() {
     g_preferences.end();
@@ -49,10 +51,11 @@ void setup() {
                     g_network.api->get_next_booking()
                   );
 
+    OFC_Setup_process setup_process;
     // Setup process if settings not saved
     Serial.print("Setup process... ");
     if (!g_preferences.getBool(SETUP_COMPLETED_KEY)) {
-        if (!setup_process(g_preferences)) {
+        if (!setup_process.begin(g_preferences, g_ui)) {
             clean_restart();
         }
     }
@@ -177,4 +180,3 @@ void loop() {
 
     g_hardware.nfc.reset();
 }
-
