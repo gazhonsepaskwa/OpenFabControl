@@ -1,1 +1,2 @@
-curl -k -X POST -d '{"user_id":1}' https://localhost:4080/web-admin-api/desactivate_user
+TOKEN="${ADMIN_TOKEN:-<admin_token>}"
+curl -k -X POST -H "Authorization: Bearer $TOKEN" -d '{"user_id":1}' https://localhost:4080/web-admin-api/desactivate_user

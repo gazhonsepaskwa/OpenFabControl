@@ -186,6 +186,30 @@ Creates a user (same handler as admin).
 
 ## Admin API
 
+**Auth:** `Authorization: Bearer <JWT>` **required on all** `/web-admin-api/*` routes **except** `POST /web-admin-api/login`.
+
+**Role:** the JWT user must have the `admin` role for all admin routes except login.
+
+### POST /web-admin-api/login
+Admin login with credentials.
+
+**Input (JSON):**
+| Parameter | Type   | Required |
+|-----------|--------|----------|
+| email     | string | yes      |
+| password  | string | yes      |
+
+**Outputs:**
+| Code | Body                                                                   |
+|------|------------------------------------------------------------------------|
+| 200  | `{"msg":"logged in successfully","token":"<JWT>"}`                     |
+| 403  | `{"error":"Invalid credential"}` or `{"error":"Forbidden"}`            |
+| 400  | `{"error":"invalid payload: email/password cannot be empty"}`          |
+| 405  | `{"error":"Method not allowed"}`                                       |
+| 500  | `{"error":"Internal server error"}`                                    |
+
+---
+
 ### Machine controllers
 
 ### GET /web-admin-api/get_resource_list_to_approve
@@ -545,6 +569,10 @@ Removes a role from a user.
 
 ## User API
 
+**Auth:** `Authorization: Bearer <JWT>` **required on all** `/web-user-api/*` routes **except**:
+- `POST /web-user-api/login`
+- `POST /web-user-api/user_one_time_setup`
+
 ### POST /web-user-api/user_one_time_setup
 Initial account setup (one-time only).
 
@@ -642,7 +670,6 @@ Login with credentials.
 ### Users
 - POST /web-user-api/me
 - POST /web-user-api/edit_profile
-- POST /web-admin-api/login
 - POST /web-user-api/logout
 - POST /web-admin-api/logout
 

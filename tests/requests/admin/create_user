@@ -1,1 +1,2 @@
-curl -k -X POST -d '{"email":"perso@nalebrun.be", "access_key":"B2B0B7BB"}' https://localhost:4080/web-admin-api/create_user
+TOKEN="${ADMIN_TOKEN:-<admin_token>}"
+curl -k -X POST -H "Authorization: Bearer $TOKEN" -d '{"email":"perso@nalebrun.be", "access_key":"B2B0B7BB"}' https://localhost:4080/web-admin-api/create_user

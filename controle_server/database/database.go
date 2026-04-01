@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq" // postgress specific package
+	"golang.org/x/crypto/bcrypt"
 )
 
 var Self *sql.DB
@@ -30,6 +31,10 @@ func Initdb() {
 	// ensure table exists
 	if err := ensureTable(); err != nil {
 		log.Fatalf("failed to ensure table: %v", err)
+	}
+
+	if err := ensureDefaultAdmin(); err != nil {
+		log.Fatalf("failed to ensure default admin: %v", err)
 	}
 }
 
@@ -138,6 +143,57 @@ func ensureTable() error {
 	);`
 	_, err = Self.Exec(create)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureDefaultAdmin() error {
+	// 1) Ensure role exists
+	if _, err := Self.Exec(`INSERT INTO roles (name) VALUES ('admin') ON CONFLICT (name) DO NOTHING`); err != nil {
+		return err
+	}
+
+	// 2) Ensure root user exists
+	var userID int
+	err := Self.QueryRow(`SELECT id FROM users WHERE email = $1`, "root@local").Scan(&userID)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return err
+		}
+
+		hashedBytes, err := bcrypt.GenerateFromPassword([]byte("root"), 14)
+		if err != nil {
+			return err
+		}
+		hashed := string(hashedBytes)
+
+		if err := Self.QueryRow(
+			`INSERT INTO users (access_key, email, password, activation_code, status)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING id`,
+			"root",
+			"root@local",
+			hashed,
+			"seed-root",
+			"active",
+		).Scan(&userID); err != nil {
+			return err
+		}
+	}
+
+	// 3) Ensure root has admin role
+	var roleID int
+	if err := Self.QueryRow(`SELECT id FROM roles WHERE name = $1`, "admin").Scan(&roleID); err != nil {
+		return err
+	}
+
+	if _, err := Self.Exec(
+		`INSERT INTO users_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT (user_id, role_id) DO NOTHING`,
+		userID,
+		roleID,
+	); err != nil {
 		return err
 	}
 

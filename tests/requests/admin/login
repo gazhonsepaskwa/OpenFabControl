@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Detect whether the script is sourced (bash/zsh compatible).
+_is_sourced=0
+(return 0 2>/dev/null) && _is_sourced=1
+
+# When sourced, do NOT change shell options (would break zsh prompts/plugins).
+if [[ "$_is_sourced" -eq 0 ]]; then
+  set -euo pipefail
+fi
+
+RESP="$(curl -sk -X POST -H "Content-Type: application/json" -d '{"email":"root@local","password":"root"}' https://localhost:4080/web-admin-api/login)"
+echo "$RESP"
+
+TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get("token",""))' <<<"$RESP")"
+if [[ -z "$TOKEN" ]]; then
+  exit 1
+fi
+
+if [[ "$_is_sourced" -eq 1 ]]; then
+  export ADMIN_TOKEN="$TOKEN"
+  echo "ADMIN_TOKEN exported"
+else
+  echo "Run: source ./tests/requests/admin/login"
+  echo "export ADMIN_TOKEN=\"$TOKEN\""
+fi

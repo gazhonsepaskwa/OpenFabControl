@@ -1,1 +1,2 @@
-curl -k -X POST -d '{"uuid":"918688ab-2a83-4832-b4e3-400034f6d8f9"}' https://localhost:4080/web-admin-api/approve_resource
+TOKEN="${ADMIN_TOKEN:-<admin_token>}"
+curl -k -X POST -H "Authorization: Bearer $TOKEN" -d '{"uuid":"918688ab-2a83-4832-b4e3-400034f6d8f9"}' https://localhost:4080/web-admin-api/approve_resource

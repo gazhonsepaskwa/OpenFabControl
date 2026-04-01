@@ -1,1 +1,2 @@
-curl -k -X DELETE -d '{"role_name":"woodspace"}' https://localhost:4080/web-admin-api/delete_role
+TOKEN="${ADMIN_TOKEN:-<admin_token>}"
+curl -k -X DELETE -H "Authorization: Bearer $TOKEN" -d '{"role_name":"woodspace"}' https://localhost:4080/web-admin-api/delete_role

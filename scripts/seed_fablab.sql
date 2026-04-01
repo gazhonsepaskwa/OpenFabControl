@@ -13,8 +13,9 @@ INSERT INTO roles (name) VALUES
   ('student')
 ON CONFLICT (name) DO NOTHING;
 
--- 2) Users (40 users + 1 admin)
--- Password for all seeded users: "Fablab2026!"
+-- 2) Users (root admin + 40 users)
+-- Password for root: "root"
+-- Password for all other seeded users: "Fablab2026!"
 -- Uses bcrypt compatible with backend check (cost 14).
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -30,7 +31,6 @@ INSERT INTO users (
   activation_code,
   status
 ) VALUES
-  ('fab-admin-001', 'admin@fablab.local', crypt('Fablab2026!', gen_salt('bf', 14)), 'Camille', 'Durand', 'FR00000000001', '12 Rue des Ateliers, 75011 Paris', 'FR7612345678901234567890123', 'seed-admin-001', 'active'),
   ('fab-user-001', 'lea.martin@fablab.local', crypt('Fablab2026!', gen_salt('bf', 14)), 'Lea', 'Martin', 'FR00000000002', '3 Rue des Makers, 69001 Lyon', 'FR7612345678901234567890001', 'seed-user-001', 'active'),
   ('fab-user-002', 'hugo.bernard@fablab.local', crypt('Fablab2026!', gen_salt('bf', 14)), 'Hugo', 'Bernard', 'FR00000000003', '8 Impasse Proto, 33000 Bordeaux', 'FR7612345678901234567890002', 'seed-user-002', 'active'),
   ('fab-user-003', 'chloe.robert@fablab.local', crypt('Fablab2026!', gen_salt('bf', 14)), 'Chloe', 'Robert', 'FR00000000004', '22 Rue des Plans, 59000 Lille', 'FR7612345678901234567890003', 'seed-user-003', 'active'),
@@ -78,7 +78,7 @@ INSERT INTO users_roles (user_id, role_id)
 SELECT u.id, r.id
 FROM users u
 JOIN roles r ON r.name = 'admin'
-WHERE u.email = 'admin@fablab.local'
+WHERE u.email = 'root@local'
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
 INSERT INTO users_roles (user_id, role_id)
@@ -95,8 +95,7 @@ JOIN roles r ON r.name = 'instructor'
 WHERE u.email IN (
   'sarah.chevalier@fablab.local',
   'alice.moulin@fablab.local',
-  'maelys.pascal@fablab.local',
-  'admin@fablab.local'
+  'maelys.pascal@fablab.local'
 )
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
@@ -106,8 +105,7 @@ FROM users u
 JOIN roles r ON r.name = 'staff'
 WHERE u.email IN (
   'camille.renaud@fablab.local',
-  'thomas.lemoine@fablab.local',
-  'admin@fablab.local'
+  'thomas.lemoine@fablab.local'
 )
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
@@ -145,7 +143,6 @@ SELECT
 FROM users u
 JOIN resources r ON r.approved = true
 WHERE u.email LIKE '%@fablab.local'
-  AND u.email <> 'admin@fablab.local'
   AND u.id % 2 = 0
   AND r.id % 3 = 0
   AND NOT EXISTS (

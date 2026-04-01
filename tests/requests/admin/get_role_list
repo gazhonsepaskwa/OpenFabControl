@@ -1,1 +1,2 @@
-curl -k -X GET https://localhost:4080/web-admin-api/get_role_list
+TOKEN="${ADMIN_TOKEN:-<admin_token>}"
+curl -k -X GET -H "Authorization: Bearer $TOKEN" https://localhost:4080/web-admin-api/get_role_list

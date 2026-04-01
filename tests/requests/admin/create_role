@@ -1,1 +1,2 @@
-curl -k -X POST -d '{"role_name":"woodspace"}' https://localhost:4080/web-admin-api/create_role
+TOKEN="${ADMIN_TOKEN:-<admin_token>}"
+curl -k -X POST -H "Authorization: Bearer $TOKEN" -d '{"role_name":"woodspace"}' https://localhost:4080/web-admin-api/create_role
