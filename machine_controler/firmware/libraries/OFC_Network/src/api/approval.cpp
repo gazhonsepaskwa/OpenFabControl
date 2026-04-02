@@ -2,7 +2,7 @@
 
 #include <ArduinoJson.h>
 
-#include "firmware.h"
+#include "../OFC_NetworkConfig.h"
 
 bool Api::is_approved_by_admin(int* out_http_code) {
     if (out_http_code) *out_http_code = 0;
@@ -13,8 +13,8 @@ bool Api::is_approved_by_admin(int* out_http_code) {
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (out_http_code) *out_http_code = code;

@@ -44,6 +44,10 @@ class OFC_Ui {
         NextBooking*        _next_booking; // pointer to OFC_Hardware::_next_booking
         // timers ( millis() val )
         unsigned long       _last_machine_usage_time_update_ms;
+        // Time used on MACHINE_USAGE: only while MCP2 GPA1 is LOW (machine active)
+        unsigned long       _session_active_used_ms;
+        unsigned long       _session_active_last_tick_ms;
+        unsigned long       _last_update_time_used_api_ms;
         int                 _book_session_minutes = 10;
         int                 _add_time_selected_minutes = 0;
         int                 _add_time_max_minutes = 0;
@@ -63,7 +67,10 @@ class OFC_Ui {
         void show_setup_complete();
         void update_menu(Event ev);
         void update_machine_usage_times();
+        void reset_session_active_usage_tracking();
+        unsigned int get_session_active_used_seconds() const;
         Menu get_menu();
+        void redraw_scan_card();
 
 
     // Temporary utils: screen helpers until lopaka.app is fully used

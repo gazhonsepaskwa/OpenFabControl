@@ -5,8 +5,8 @@
 #include <HardwareSerial.h>
 #include <Preferences.h>
 #include <OFC_Setup_process.h>
+#include <OFC_HardwareConfig.h>
 #include "preference_keys.h"
-#include "firmware.h"
 
 // Lib includes
 #include <OFC_Hardware.h>
@@ -46,14 +46,14 @@ void setup() {
     g_hardware.begin();
 
     // Ui init
-    // g_network is not initialized yet here (api == nullptr). Keep a safe default next booking for UI.
-    g_next_booking = {};
+    g_next_booking = {}; // temporarily empty next booking because g_network is not initialized yet here (api == nullptr).
     g_ui.begin(
         g_preferences.getString(MACHINE_NAME_KEY).c_str(),
         &g_hardware.tft,
         &g_next_booking
     );
 
+    // Setup process
     OFC_Setup_process setup_process;
     // Setup process if settings not saved
     Serial.print("Setup process... ");
@@ -117,13 +117,27 @@ void loop() {
     ////////////
 
     // If wifi connection lost, reconnect
+    static bool was_wifi_connection_lost = false;
     g_network.checkWifiAndReconnect();
+    // If we just reconnected, resync time and refresh next booking.
+    if (was_wifi_connection_lost && !wifi_connection_lost && g_network.isWifiConnected()) {
+        g_network.setTimezone();
+        if (g_network.api) {
+            g_network.api->force_refresh_next_booking();
+            g_next_booking = g_network.api->get_next_booking();
+        }
+        if (g_ui.get_menu() == SCAN_CARD) {
+            g_ui.redraw_scan_card();
+        }
+    }
+    was_wifi_connection_lost = wifi_connection_lost;
 
     // Periodic refresh next booking info while on scan card screen
     if (g_ui.get_menu() == SCAN_CARD) {
-        if (g_network.api->refresh_next_booking_if_needed()) {
+        if (g_network.api && g_network.api->refresh_next_booking_if_needed()) {
             g_next_booking = g_network.api->get_next_booking();
-            g_ui.update_menu(EVENT_NONE);
+            // Booking changed -> redraw scan card screen.
+            g_ui.redraw_scan_card();
         }
     }
 
@@ -153,7 +167,7 @@ void loop() {
         unsigned long duration = millis() - press_start;
         // up to here
 
-        if ((g_ui.get_menu() == ADD_TIME || g_ui.get_menu() == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
+        if ((g_ui.get_menu() == ADD_TIME || g_ui.get_menu() == BOOK_SESSION) && duration >= OFC_LONG_PRESS_MS) {
             g_ui.update_menu(EVENT_BTN_LEFT_LONG);
         } else {
             g_ui.update_menu(EVENT_BTN_LEFT);
@@ -172,7 +186,7 @@ void loop() {
         }
         unsigned long duration = millis() - press_start;
 
-        if ((g_ui.get_menu() == ADD_TIME || g_ui.get_menu() == BOOK_SESSION) && duration >= LONG_PRESS_MS) {
+        if ((g_ui.get_menu() == ADD_TIME || g_ui.get_menu() == BOOK_SESSION) && duration >= OFC_LONG_PRESS_MS) {
             g_ui.update_menu(EVENT_BTN_RIGHT_LONG);
         } else {
             g_ui.update_menu(EVENT_BTN_RIGHT);

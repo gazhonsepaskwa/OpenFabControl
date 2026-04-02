@@ -29,6 +29,7 @@ void OFC_Ui::menu_handler_book_session(Event ev) {
             delay(5000);
             if (g_network.api && g_network.api->start_session(g_last_scanned_access_key, &g_current_session, errbuf, sizeof(errbuf))) {
                 g_hardware.relay_on();
+                reset_session_active_usage_tracking();
                 draw_machine_usage();
             } else {
                 const char* err = errbuf[0] ? errbuf : "Start session failed";

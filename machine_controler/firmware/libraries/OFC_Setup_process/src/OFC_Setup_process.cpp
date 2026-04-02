@@ -1,6 +1,6 @@
 #include "OFC_Setup_process.h"
 #include "../../../preference_keys.h"
-#include "../../../firmware.h"
+#include "OFC_SetupConfig.h"
 #include "Preferences.h"
 #include <esp_random.h>
 #include <Arduino.h>
@@ -137,7 +137,7 @@ int OFC_Setup_process::register_machine_to_api() {
     }
 
     String body = "{\"uuid\":\"" + String(uuid) + "\",\"name\":\"" + String(_form_data.machine_name)
-        + "\",\"type\":\"" + String(MACHINE_TYPE) + "\"}";
+        + "\",\"type\":\"" + String(OFC_MACHINE_TYPE) + "\"}";
     String url = "https://" + String(_form_data.api_host) + "/machine-api/register";
 
     WiFiClientSecure client;

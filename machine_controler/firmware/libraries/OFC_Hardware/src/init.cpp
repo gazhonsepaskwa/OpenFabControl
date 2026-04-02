@@ -88,6 +88,7 @@ void OFC_Hardware::init_relay() {
 void OFC_Hardware::init_button() {
     this->mcp2.pinMode(BTN_L, INPUT);
     this->mcp2.pinMode(BTN_R, INPUT);
+    this->mcp2.pinMode(MCP2_GPA1, INPUT);
 }
 
 // LED initialization

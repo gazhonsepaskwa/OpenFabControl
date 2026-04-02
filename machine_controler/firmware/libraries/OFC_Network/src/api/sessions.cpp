@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "firmware.h"
+#include "../OFC_NetworkConfig.h"
 
 // Parse RFC3339 UTC datetime (e.g. "2026-03-06T09:51:00Z") to Unix timestamp.
 static int64_t rfc3339_utc_to_unix(const char* s) {
@@ -73,8 +73,8 @@ bool Api::start_session(const char* access_key, Session* out, char* err_msg, siz
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
@@ -132,14 +132,90 @@ bool Api::stop_session(char* err_msg, size_t err_size) {
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
     _http.end();
 
     if (code >= 200 && code < 300) return true;
     if (err_msg && err_size) snprintf(err_msg, err_size, "HTTP %d", code);
     return false;
+}
+
+bool Api::update_time_used(int time_used_seconds, Session* out, char* err_msg, size_t err_size) {
+    if (!out) return false;
+    if (time_used_seconds < 0) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "time_used_seconds must be >= 0");
+        return false;
+    }
+    if (_host.length() == 0) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "API host not configured");
+        return false;
+    }
+    if (_resource_uuid.length() == 0) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Resource UUID missing");
+        return false;
+    }
+
+    String url = "https://" + _host + "/machine-api/update_time_used";
+    String body = "{\"resource_uuid\":\"" + _resource_uuid + "\",\"time_used_seconds\":" + String(time_used_seconds) + "}";
+
+    _http.begin(_client, url);
+    _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    int code = _http.POST(body);
+
+    if (code < 200 || code >= 300) {
+        if (err_msg && err_size > 0) {
+            if (code < 0) {
+                set_http_error_msg(code, err_msg, err_size);
+            } else {
+                String payload = _http.getString();
+                JsonDocument doc;
+                if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
+                    strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
+                } else {
+                    snprintf(err_msg, err_size, "HTTP %d", code);
+                }
+                err_msg[err_size - 1] = '\0';
+            }
+        }
+        _http.end();
+        return false;
+    }
+
+    String payload = _http.getString();
+    _http.end();
+
+    JsonDocument doc;
+    if (deserializeJson(doc, payload)) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Invalid JSON response");
+        return false;
+    }
+    if (!doc.containsKey("session")) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Missing session");
+        return false;
+    }
+
+    JsonObject sess = doc["session"];
+    out->id = sess["id"].as<int>();
+    out->user_id = sess["user_id"].as<int>();
+    String ru = sess["resource_uuid"].as<String>();
+    strncpy(out->resource_uuid, ru.c_str(), sizeof(out->resource_uuid) - 1);
+    out->resource_uuid[sizeof(out->resource_uuid) - 1] = '\0';
+
+    const char* started = sess["started_at"].as<const char*>();
+    const char* ended = sess["ended_at"].as<const char*>();
+    out->started_at_unix = rfc3339_utc_to_unix(started);
+    out->ended_at_unix = rfc3339_utc_to_unix(ended);
+    out->time_used = sess["time_used"].as<int>();
+
+    String st = sess["status"].as<String>();
+    strncpy(out->status, st.c_str(), sizeof(out->status) - 1);
+    out->status[sizeof(out->status) - 1] = '\0';
+
+    return true;
 }
 
 bool Api::get_max_add_time(int* out_max, char* err_msg, size_t err_size) {
@@ -158,8 +234,8 @@ bool Api::get_max_add_time(int* out_max, char* err_msg, size_t err_size) {
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
@@ -209,8 +285,8 @@ bool Api::add_time(int add_minutes, Session* out, char* err_msg, size_t err_size
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
@@ -267,8 +343,8 @@ bool Api::add_time(int add_minutes, Session* out, char* err_msg, size_t err_size
 
 bool Api::create_session(const char* access_key, int duration_minutes, Session* out, char* err_msg, size_t err_size) {
     if (!out) return false;
-    if (duration_minutes < BOOK_SESSION_MIN_MINUTES) {
-        if (err_msg && err_size) snprintf(err_msg, err_size, "Duration must be at least %d minutes", BOOK_SESSION_MIN_MINUTES);
+    if (duration_minutes < OFC_BOOK_SESSION_MIN_MINUTES) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Duration must be at least %d minutes", OFC_BOOK_SESSION_MIN_MINUTES);
         return false;
     }
     if (_host.length() == 0) {
@@ -298,8 +374,8 @@ bool Api::create_session(const char* access_key, int duration_minutes, Session* 
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (code != 201) {

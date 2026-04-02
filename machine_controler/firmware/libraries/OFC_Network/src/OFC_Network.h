@@ -65,6 +65,7 @@ class Api {
         bool stop_session(char* err_msg, size_t err_size);
         bool get_max_add_time(int* out_max, char* err_msg, size_t err_size);
         bool add_time(int add_minutes, Session* out, char* err_msg, size_t err_size);
+        bool update_time_used(int time_used_seconds, Session* out, char* err_msg, size_t err_size);
 
 };
 

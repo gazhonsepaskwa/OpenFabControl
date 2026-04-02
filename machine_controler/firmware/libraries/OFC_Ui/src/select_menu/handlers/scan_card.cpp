@@ -21,6 +21,7 @@ void OFC_Ui::menu_handler_scan_card(Event ev) {
             char errbuf[64] = {0};
             if (g_network.api && g_network.api->start_session(g_last_scanned_access_key, &g_current_session, errbuf, sizeof(errbuf))) {
                 g_hardware.relay_on();
+                reset_session_active_usage_tracking();
                 draw_machine_usage();
             } else {
                 const char* err = errbuf[0] ? errbuf : "Start session failed";

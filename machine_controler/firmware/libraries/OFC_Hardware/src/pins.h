@@ -8,6 +8,9 @@
 #define BTN_L 3 // MCP2
 #define BTN_R 4 // MCP2
 
+// MCP2 input: machine activity (see OFC_Ui MACHINE_USAGE time used)
+#define MCP2_GPA1 1 // MCP2
+
 // PN7150 (NFC)
 #define NFC_ADDR 0x28
 #define NFC_IRQ  39

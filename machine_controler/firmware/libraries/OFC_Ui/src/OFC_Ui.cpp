@@ -6,7 +6,11 @@
 OFC_Ui::OFC_Ui()
     :   _machine_name(""),
         _tft(0x0),
-        _qr(0x0)
+        _qr(0x0),
+        _last_machine_usage_time_update_ms(0),
+        _session_active_used_ms(0),
+        _session_active_last_tick_ms(0),
+        _last_update_time_used_api_ms(0)
 {}
 
 // Constructor
@@ -15,7 +19,11 @@ OFC_Ui::OFC_Ui(String machine_name, Adafruit_ILI9341* tft, NextBooking* next_boo
         _tft(tft),
         _qr(new QRCodeGFX(*tft)),
         _menu(INIT),
-        _next_booking(next_booking){
+        _next_booking(next_booking),
+        _last_machine_usage_time_update_ms(0),
+        _session_active_used_ms(0),
+        _session_active_last_tick_ms(0),
+        _last_update_time_used_api_ms(0) {
     _qr->setScale(2);  // 1 = default size, 2 = double, etc.
 }
 
@@ -112,4 +120,8 @@ void OFC_Ui::show_setup_complete() {
 
 Menu OFC_Ui::get_menu() {
     return _menu;
+}
+
+void OFC_Ui::redraw_scan_card() {
+    draw_scan_card();
 }

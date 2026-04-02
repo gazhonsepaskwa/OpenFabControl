@@ -1,6 +1,6 @@
 #include "OFC_Network.h"
 #include <WiFi.h>
-#include "firmware.h"
+#include "OFC_NetworkConfig.h"
 
 extern bool wifi_connection_lost;
 
@@ -18,7 +18,7 @@ bool OFC_Network::isWifiConnected() {
 
 void OFC_Network::setTimezone() {
     configTime(0, 0, "pool.ntp.org");
-    setenv("TZ", TZ_STRING, 1);
+    setenv("TZ", OFC_TZ_STRING, 1);
     tzset();
 
     // wait for NTP sync (needed for draw_scan_card to compute has_booking_today)
@@ -33,7 +33,7 @@ void OFC_Network::checkWifiAndReconnect() {
     // get uptime
     unsigned long now_ms = millis();
     // check if the last check was less than the interval
-    if (now_ms - this->last_wifi_check_ms < WIFI_CHECK_INTERVAL_MS)
+    if (now_ms - this->last_wifi_check_ms < OFC_WIFI_CHECK_INTERVAL_MS)
         return;
     this->last_wifi_check_ms = now_ms;
 
@@ -41,7 +41,7 @@ void OFC_Network::checkWifiAndReconnect() {
         if (!wifi_connection_lost) {
             wifi_connection_lost = true;
         }
-        if (now_ms - this->last_wifi_reconnect_ms >= WIFI_RECONNECT_INTERVAL_MS) {
+        if (now_ms - this->last_wifi_reconnect_ms >= OFC_WIFI_RECONNECT_INTERVAL_MS) {
             this->last_wifi_reconnect_ms = now_ms;
             if (this->SSID.length() > 0) {
                 WiFi.disconnect();

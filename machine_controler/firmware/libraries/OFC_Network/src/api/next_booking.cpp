@@ -1,7 +1,7 @@
 #include "../OFC_Network.h"
 #include <ArduinoJson.h>
 #include <string.h>
-#include "firmware.h"
+#include "../OFC_NetworkConfig.h"
 
 extern NextBooking g_next_booking;
 
@@ -48,8 +48,8 @@ bool Api::fetchNextBooking(NextBooking* out) {
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
-    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setTimeout(OFC_MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(OFC_MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
@@ -103,13 +103,13 @@ bool Api::next_booking_equals(const NextBooking& a, const NextBooking& b) {
     return (strcmp(a.user_name, b.user_name) == 0);
 }
 
-// update the next_booking (with fetchNextBooking) attribut if last time it has been done is at least NEXT_BOOKING_REFRESH_INTERVAL_MS later
+// update the next_booking (with fetchNextBooking) attribut if last time it has been done is at least OFC_NEXT_BOOKING_REFRESH_INTERVAL_MS later
 bool Api::refresh_next_booking_if_needed(void) {
     static unsigned long    last_next_booking_refresh_ms = 0;
 
     // exit if not the right time
     unsigned long now_ms = millis();
-    if ((now_ms - _last_next_booking_refresh_ms) < NEXT_BOOKING_REFRESH_INTERVAL_MS) {
+    if ((now_ms - _last_next_booking_refresh_ms) < OFC_NEXT_BOOKING_REFRESH_INTERVAL_MS) {
         return false;
     }
 
