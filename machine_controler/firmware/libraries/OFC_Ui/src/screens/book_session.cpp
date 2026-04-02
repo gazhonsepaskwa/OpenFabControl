@@ -9,7 +9,7 @@ void OFC_Ui::draw_book_session_values() {
     uint16_t bg = _tft->color565(80, 140, 80);
     _tft->fillRect(0, 80, 320, 40, bg);
     char buf[32];
-    snprintf(buf, sizeof(buf), "%d min", book_session_minutes);
+    snprintf(buf, sizeof(buf), "%d min", _book_session_minutes);
     printTFTcentered(buf, _tft->color565(255, 255, 255), 3, 0, 80, 320, 40);
     _tft->fillRect(0, 125, 320, 25, bg);
     printTFTcentered("Min 10 min", _tft->color565(230, 230, 230), 2, 0, 125, 320, 25);

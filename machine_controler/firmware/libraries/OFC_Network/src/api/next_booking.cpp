@@ -48,6 +48,8 @@ bool Api::fetchNextBooking(NextBooking* out) {
 
     _http.begin(_client, url);
     _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
     int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
@@ -107,7 +109,7 @@ bool Api::refresh_next_booking_if_needed(void) {
 
     // exit if not the right time
     unsigned long now_ms = millis();
-    if ((now_ms - last_next_booking_refresh_ms) < NEXT_BOOKING_REFRESH_INTERVAL_MS) {
+    if ((now_ms - _last_next_booking_refresh_ms) < NEXT_BOOKING_REFRESH_INTERVAL_MS) {
         return false;
     }
 
@@ -121,7 +123,7 @@ bool Api::refresh_next_booking_if_needed(void) {
     }
 
     // update last refresh time
-    last_next_booking_refresh_ms = now_ms;
+    _last_next_booking_refresh_ms = now_ms;
 
     // check if something changed from last fetch
     bool changed = !next_booking_equals(g_next_booking, fetched);
@@ -131,11 +133,13 @@ bool Api::refresh_next_booking_if_needed(void) {
 }
 
 void Api::force_refresh_next_booking(void) {
-    if (this->fetchNextBooking(&_next_booking)) {
-        last_next_booking_refresh_ms = millis();
+    NextBooking fetched = {};
+    if (this->fetchNextBooking(&fetched)) {
+        g_next_booking = fetched;
+        _last_next_booking_refresh_ms = millis();
     }
 }
 
 NextBooking Api::get_next_booking(void) {
-    return _next_booking;
+    return g_next_booking;
 }

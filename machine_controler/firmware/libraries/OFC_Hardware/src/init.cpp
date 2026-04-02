@@ -1,5 +1,6 @@
 #include "OFC_Hardware.h"
 #include "../../../theme.h"
+#include <Wire.h>
 
 // Helper to initialize a component with a serial print
 static void init_with_serial(OFC_Hardware& hw, void (OFC_Hardware::*fct)(), const char* text) {
@@ -9,11 +10,20 @@ static void init_with_serial(OFC_Hardware& hw, void (OFC_Hardware::*fct)(), cons
 }
 
 // Hardware constructor
+// Note: keep it side-effect free. Call begin() from setup() after Serial.begin().
 OFC_Hardware::OFC_Hardware()
     : mcp1(),
       mcp2(),
-      nfc(NFC_IRQ, NFC_VEN, NFC_ADDR),
-      tft(TFT_CS, TFT_DC, TFT_RST) {
+      // Important: on this hardware, NFC_VEN is driven via MCP1 (not an ESP32 GPIO).
+      // Using NFC_VEN as a GPIO (e.g. 0) can interfere with board bootstrap / power rails.
+      nfc(NFC_IRQ, -1, NFC_ADDR),
+      tft(TFT_CS, TFT_DC, TFT_RST) {}
+// Hardware destructor (will never be called since powering off the esp erases the RAM naturally)
+// Note : powering off the esp without cleaning is a problem only when writing to flash memory (settings, etc.)
+// but it need special hardware to detect it and continue the program until a stopable operation. So i consider it side effect of the power off.
+OFC_Hardware::~OFC_Hardware() {}
+
+void OFC_Hardware::begin() {
     init_with_serial(*this, &OFC_Hardware::init_wire,   "Wire init...     ");
     init_with_serial(*this, &OFC_Hardware::init_mcp1,   "MCP1 init...     ");
     init_with_serial(*this, &OFC_Hardware::init_mcp2,   "MCP2 init...     ");
@@ -24,10 +34,6 @@ OFC_Hardware::OFC_Hardware()
     init_with_serial(*this, &OFC_Hardware::init_buzzer, "Buzzer init...   ");
     init_with_serial(*this, &OFC_Hardware::init_nfc,    "NFC init...      ");
 }
-// Hardware destructor (will never be called since powering off the esp erases the RAM naturally)
-// Note : powering off the esp without cleaning is a problem only when writing to flash memory (settings, etc.)
-// but it need special hardware to detect it and continue the program until a stopable operation. So i consider it side effect of the power off.
-OFC_Hardware::~OFC_Hardware() {}
 
 // Wire initialization
 void OFC_Hardware::init_wire() {
@@ -36,7 +42,6 @@ void OFC_Hardware::init_wire() {
 
 // MCP1 initialization
 void OFC_Hardware::init_mcp1() {
-    this->mcp1 = Adafruit_MCP23X17();
     if (!this->mcp1.begin_I2C(MCP1_ADDR)) {
         Serial.println("KO (address: 0x21)");
         while (1);
@@ -45,7 +50,7 @@ void OFC_Hardware::init_mcp1() {
 
 // MCP2 initialization
 void OFC_Hardware::init_mcp2() {
-    if (!this->mcp2.begin_I2C(0x20)) {
+    if (!this->mcp2.begin_I2C(MCP2_ADDR)) {
         Serial.println("KO (address: 0x20)");
         while (1);
     }

@@ -23,6 +23,21 @@ OFC_Ui::~OFC_Ui() {
     if (_qr) { delete _qr; }
 }
 
+void OFC_Ui::begin(String machine_name, Adafruit_ILI9341* tft, NextBooking* next_booking) {
+    _machine_name = machine_name;
+    _tft = tft;
+    _next_booking = next_booking;
+    _menu = INIT;
+    if (_qr) {
+        delete _qr;
+        _qr = nullptr;
+    }
+    if (_tft) {
+        _qr = new QRCodeGFX(*_tft);
+        _qr->setScale(2);
+    }
+}
+
 void OFC_Ui::clear_screen() {
     _tft->fillScreen(ILI9341_BLACK);
 }

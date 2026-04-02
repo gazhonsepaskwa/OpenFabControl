@@ -14,6 +14,9 @@ class OFC_Hardware {
         OFC_Hardware();
         ~OFC_Hardware();
 
+    public:
+        void begin();
+
     private: // methods
         void init_wire();
         void init_mcp1();

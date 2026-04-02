@@ -1,4 +1,4 @@
-#include "../../OFC_Ui.h"
+#include <OFC_Ui.h>
 
 // init load the scan_card screen
 void OFC_Ui::menu_handler_init(Event ev) {

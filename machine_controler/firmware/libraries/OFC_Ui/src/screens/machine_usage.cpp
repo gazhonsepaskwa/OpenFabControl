@@ -1,4 +1,6 @@
-#include "../OFC_Ui.h"
+#include <OFC_Ui.h>
+
+extern Session g_current_session;
 
 
 void OFC_Ui::update_machine_usage_times() {
@@ -12,8 +14,8 @@ void OFC_Ui::update_machine_usage_times() {
 
 void OFC_Ui::draw_machine_usage_times_inner() {
     time_t now_sec = time(nullptr);
-    int time_left = (int)(current_session.ended_at_unix - now_sec);
-    int time_used_val = (int)(now_sec - current_session.started_at_unix);
+    int time_left = (int)(g_current_session.ended_at_unix - now_sec);
+    int time_used_val = (int)(now_sec - g_current_session.started_at_unix);
     if (time_left < 0) time_left = 0;
     if (time_used_val < 0) time_used_val = 0;
 

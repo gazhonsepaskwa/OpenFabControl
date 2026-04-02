@@ -1,5 +1,6 @@
 #include "OFC_Setup_process.h"
 #include "../../../preference_keys.h"
+#include "../../../firmware.h"
 #include "Preferences.h"
 #include <esp_random.h>
 #include <Arduino.h>
@@ -7,14 +8,12 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
-// Constructor / Destructor
-OFC_Setup_process::OFC_Setup_process(OFC_Ui* ui, Preferences* pref)
-:   _ui(ui),
-    _pref(pref),
-    _dnsServer(),
-    _server(80)) {}
-
-OFC_Setup_process::OFC_Setup_process();
+OFC_Setup_process::OFC_Setup_process()
+    : _ui(nullptr),
+      _pref(nullptr),
+      _dnsServer(),
+      _server(80),
+      _form_data{} {}
 
 static const char ALNUM[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 #define ALNUM_LEN 62
@@ -61,8 +60,10 @@ bool OFC_Setup_process::start_ap(char* ap_ssid, char* ap_pass) {
         Serial.println("Setup: WiFi.softAP failed");
         return false;
     }
-    _pref.putString(WIFI_AP_SSID_KEY, ap_ssid);
-    _pref.putString(WIFI_AP_PASS_KEY, ap_pass);
+    if (_pref) {
+        _pref->putString(WIFI_AP_SSID_KEY, ap_ssid);
+        _pref->putString(WIFI_AP_PASS_KEY, ap_pass);
+    }
     return true;
 }
 
@@ -73,68 +74,71 @@ void OFC_Setup_process::display_ap_instructions(const char* ap_ssid, const char*
 void OFC_Setup_process::run_captive_portal_until_form() {
     bool form_received = false;
 
-   _server.on("/", HTTP_GET, [&_server]() {
-       _server.send(200, "text/html", SETUP_HTML);
+    _server.on("/", HTTP_GET, [this]() {
+        _server.send(200, "text/html", SETUP_HTML);
     });
-   _server.on("/", HTTP_POST, [&_server, &form_data, &form_received]() {
-        if (_server.hasArg("machine_name"))_server.arg("machine_name").toCharArray(form_data.machine_name, sizeof(form_data.machine_name));
-        else form_data.machine_name[0] = '\0';
-        if (_server.hasArg("ssid"))_server.arg("ssid").toCharArray(form_data.ssid, sizeof(form_data.ssid));
-        else form_data.ssid[0] = '\0';
-        if (_server.hasArg("password"))_server.arg("password").toCharArray(form_data.password, sizeof(form_data.password));
-        else form_data.password[0] = '\0';
-        if (_server.hasArg("machine_api_host"))_server.arg("machine_api_host").toCharArray(form_data.api_host, sizeof(form_data.api_host));
-        else form_data.api_host[0] = '\0';
+    _server.on("/", HTTP_POST, [this, &form_received]() {
+        if (_server.hasArg("machine_name")) _server.arg("machine_name").toCharArray(_form_data.machine_name, sizeof(_form_data.machine_name));
+        else _form_data.machine_name[0] = '\0';
+        if (_server.hasArg("ssid")) _server.arg("ssid").toCharArray(_form_data.ssid, sizeof(_form_data.ssid));
+        else _form_data.ssid[0] = '\0';
+        if (_server.hasArg("password")) _server.arg("password").toCharArray(_form_data.password, sizeof(_form_data.password));
+        else _form_data.password[0] = '\0';
+        if (_server.hasArg("machine_api_host")) _server.arg("machine_api_host").toCharArray(_form_data.api_host, sizeof(_form_data.api_host));
+        else _form_data.api_host[0] = '\0';
         form_received = true;
-       _server.send(200, "text/html", "<p>Submitted. Device is connecting...</p>");
+        _server.send(200, "text/html", "<p>Submitted. Device is connecting...</p>");
     });
     IPAddress apIP = WiFi.softAPIP();
-   _server.onNotFound([&_server, &apIP]() {
-       _server.sendHeader("Location", "http://" + apIP.toString(), true);
-       _server.send(302, "text/plain", "");
+    _server.onNotFound([this, &apIP]() {
+        _server.sendHeader("Location", "http://" + apIP.toString(), true);
+        _server.send(302, "text/plain", "");
     });
 
-    dnsServer.start(53, "*", WiFi.softAPIP());
-   _server.begin();
+    _dnsServer.start(53, "*", WiFi.softAPIP());
+    _server.begin();
 
     while (!form_received) {
-        dnsServer.processNextRequest();
-       _server.handleClient();
+        _dnsServer.processNextRequest();
+        _server.handleClient();
         delay(10);
     }
 }
 
-void OFC_Setup_process::connect_to_sta_wifi(const SetupFormData& form_data, Preferences& preferences) {
-    if (_ui) _ui->show_setup_connecting_wifi(form_data.ssid);
+void OFC_Setup_process::connect_to_sta_wifi() {
+    if (_ui) _ui->show_setup_connecting_wifi(_form_data.ssid);
 
     WiFi.mode(WIFI_STA);
-    WiFi.begin(form_data.ssid, form_data.password);
+    WiFi.begin(_form_data.ssid, _form_data.password);
     unsigned long start = millis();
     while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000)
         delay(200);
 
     if (WiFi.status() != WL_CONNECTED) {
         show_error_and_restart("WiFi connection failed");
+        return;
     }
-    preferences.putString(WIFI_STA_SSID_KEY, form_data.ssid);
-    preferences.putString(WIFI_STA_PASS_KEY, form_data.password);
+    if (_pref) {
+        _pref->putString(WIFI_STA_SSID_KEY, _form_data.ssid);
+        _pref->putString(WIFI_STA_PASS_KEY, _form_data.password);
+    }
 }
 
-int OFC_Setup_process::register_machine_to_api(const SetupFormData& form_data, Preferences& preferences) {
+int OFC_Setup_process::register_machine_to_api() {
     if (_ui) _ui->show_setup_registering();
 
     char uuid[40];
-    String stored = preferences.getString(UUID_KEY, "");
+    String stored = _pref ? _pref->getString(UUID_KEY, "") : String("");
     if (stored.length() == 0) {
         generate_uuid(uuid, sizeof(uuid));
-        preferences.putString(UUID_KEY, uuid);
+        if (_pref) _pref->putString(UUID_KEY, uuid);
     } else {
         stored.toCharArray(uuid, sizeof(uuid));
     }
 
-    String body = "{\"uuid\":\"" + String(uuid) + "\",\"name\":\"" + String(form_data.machine_name)
+    String body = "{\"uuid\":\"" + String(uuid) + "\",\"name\":\"" + String(_form_data.machine_name)
         + "\",\"type\":\"" + String(MACHINE_TYPE) + "\"}";
-    String url = "https://" + String(form_data.api_host) + ":" + String(MACHINE_API_PORT) + "/machine-api/register";
+    String url = "https://" + String(_form_data.api_host) + ":" + String(MACHINE_API_PORT) + "/machine-api/register";
 
     WiFiClientSecure client;
     client.setInsecure();
@@ -146,39 +150,42 @@ int OFC_Setup_process::register_machine_to_api(const SetupFormData& form_data, P
     return code;
 }
 
-void OFC_Setup_process::setup_cleanup(WebServer& _server, DNSServer& dnsServer) {
-   _server.stop();
-    dnsServer.stop();
+void OFC_Setup_process::setup_cleanup() {
+    _server.stop();
+    _dnsServer.stop();
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
 }
 
-void OFC_Setup_process::show_setup_complete(void) {
+void OFC_Setup_process::show_setup_complete() {
     if (_ui) _ui->show_setup_complete();
 }
 
-bool OFC_setup_process::begin(Preferences& preferences) {
+bool OFC_Setup_process::begin(Preferences& preferences, OFC_Ui& ui) {
+    _pref = &preferences;
+    _ui = &ui;
+
     char ap_ssid[32];
     char ap_pass[9];
-    if (!start_ap(preferences, ap_ssid, ap_pass))
+    if (!start_ap(ap_ssid, ap_pass))
         return false;
 
     display_ap_instructions(ap_ssid, ap_pass);
-    run_captive_portal_until_form(_server, dnsServer, form_data);
+    run_captive_portal_until_form();
 
-    connect_to_sta_wifi(form_data, preferences);
+    connect_to_sta_wifi();
 
-    int code = register_machine_to_api(form_data, preferences);
+    int code = register_machine_to_api();
     if (code < 200 || code >= 300) {
         show_error_and_restart("API error");
         return false;
     }
 
-    preferences.putString(MACHINE_NAME_KEY, form_data.machine_name);
-    preferences.putString(MACHINE_API_HOST_KEY, form_data.api_host);
+    preferences.putString(MACHINE_NAME_KEY, _form_data.machine_name);
+    preferences.putString(MACHINE_API_HOST_KEY, _form_data.api_host);
     preferences.putBool(SETUP_COMPLETED_KEY, true);
 
-    setup_cleanup(_server, dnsServer);
+    setup_cleanup();
     show_setup_complete();
     return true;
 }

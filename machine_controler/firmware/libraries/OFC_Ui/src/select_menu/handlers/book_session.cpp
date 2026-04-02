@@ -1,19 +1,24 @@
-#include "../../OFC_Ui.h"
+#include <OFC_Ui.h>
+#include <OFC_Hardware.h>
+
+extern OFC_Network g_network;
+extern OFC_Hardware g_hardware;
+extern Session g_current_session;
+extern char g_last_scanned_access_key[32];
 
 void OFC_Ui::menu_handler_book_session(Event ev) {
     if (ev == EVENT_BTN_LEFT) {
-        book_session_minutes += 5;
+        _book_session_minutes += 5;
         draw_book_session_values();
     } else if (ev == EVENT_BTN_LEFT_LONG) {
-        book_session_minutes -= 5;
-        if (book_session_minutes < BOOK_SESSION_MIN_MINUTES) book_session_minutes = BOOK_SESSION_MIN_MINUTES;
+        _book_session_minutes -= 5;
+        if (_book_session_minutes < book_session_min_minutes) _book_session_minutes = book_session_min_minutes;
         draw_book_session_values();
     } else if (ev == EVENT_BTN_RIGHT) {
-        draw_scan_card(qr, menu);
+        draw_scan_card();
     } else if (ev == EVENT_BTN_RIGHT_LONG) {
-        String resource_uuid = preferences.getString(UUID_KEY, "");
         char errbuf[64] = {0};
-        if (create_session(last_scanned_access_key, resource_uuid.c_str(), book_session_minutes, &current_session, errbuf, sizeof(errbuf))) {
+        if (g_network.api && g_network.api->create_session(g_last_scanned_access_key, _book_session_minutes, &g_current_session, errbuf, sizeof(errbuf))) {
             clear_screen();
             draw_title((char*)_machine_name.c_str());
             draw_center_background(60, 100, 140);
@@ -22,20 +27,19 @@ void OFC_Ui::menu_handler_book_session(Event ev) {
             // Give some margin so that started_at (set slightly in the future)
             // is definitely in the past when we effectively start using the machine.
             delay(5000);
-            if (start_session(last_scanned_access_key, resource_uuid.c_str(), &current_session, errbuf, sizeof(errbuf))) {
-                last_tick_ms = millis();
-                h.relay_on();
-                draw_machine_usage(menu);
+            if (g_network.api && g_network.api->start_session(g_last_scanned_access_key, &g_current_session, errbuf, sizeof(errbuf))) {
+                g_hardware.relay_on();
+                draw_machine_usage();
             } else {
                 const char* err = errbuf[0] ? errbuf : "Start session failed";
-                show_session_error(err);
+                show_error_screen(err);
                 delay(5000);
-                draw_scan_card(qr, menu);
+                draw_scan_card();
             }
         } else {
-            show_session_error(errbuf[0] ? errbuf : "Book failed");
+            show_error_screen(errbuf[0] ? errbuf : "Book failed");
             delay(3000);
-            draw_scan_card(qr, menu);
+            draw_scan_card();
         }
     }
 }

@@ -1,4 +1,4 @@
-#include "../../OFC_Ui.h"
+#include <OFC_Ui.h>
 #include "OFC_Hardware.h"
 #include <Arduino.h>
 #include <Preferences.h>
@@ -7,6 +7,8 @@
 extern char         g_last_scanned_access_key[32];
 extern Preferences  g_preferences;
 extern OFC_Hardware g_hardware;
+extern OFC_Network  g_network;
+extern Session      g_current_session;
 
 // init load the scan_card screen
 void OFC_Ui::menu_handler_scan_card(Event ev) {
@@ -16,20 +18,18 @@ void OFC_Ui::menu_handler_scan_card(Event ev) {
             break;
 
         case Event::EVENT_CARD:
-            String resource_uuid = g_preferences.getString(UUID_KEY, "");
             char errbuf[64] = {0};
-            if (start_session(g_last_scanned_access_key, resource_uuid.c_str(), &current_session, errbuf, sizeof(errbuf))) {
-                last_tick_ms = millis();
+            if (g_network.api && g_network.api->start_session(g_last_scanned_access_key, &g_current_session, errbuf, sizeof(errbuf))) {
                 g_hardware.relay_on();
-                //draw_machine_usage(_menu);
+                draw_machine_usage();
             } else {
                 const char* err = errbuf[0] ? errbuf : "Start session failed";
                 bool no_session = (strstr(errbuf, "no session") != nullptr) || (strstr(errbuf, "No session") != nullptr);
                 if (no_session) {
-                    book_session_minutes = BOOK_SESSION_MIN_MINUTES;
-                    //draw_book_session_screen(_menu);
+                    _book_session_minutes = book_session_min_minutes;
+                    draw_book_session();
                 } else {
-                    // show_session_error(err);
+                    show_error_screen(err);
                     delay(5000);
                     draw_scan_card();
                 }

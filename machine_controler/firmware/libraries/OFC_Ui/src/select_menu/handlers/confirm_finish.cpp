@@ -1,21 +1,25 @@
-#include "../../OFC_Ui.h"
+#include <OFC_Ui.h>
+#include <OFC_Hardware.h>
+
+extern OFC_Network g_network;
+extern OFC_Hardware g_hardware;
 
 void OFC_Ui::menu_handler_confirm_finish(Event ev) {
     if (ev == EVENT_BTN_LEFT) {
-        draw_machine_usage(menu);
+        draw_machine_usage();
     } else if (ev == EVENT_BTN_RIGHT) {
-        String resource_uuid = preferences.getString(UUID_KEY, "");
-        if (stop_session(resource_uuid.c_str())) {
+        char errbuf[64] = {0};
+        if (g_network.api && g_network.api->stop_session(errbuf, sizeof(errbuf))) {
             clear_screen();
             printTFTcentered("exiting session...", _tft->color565(255, 255, 255), 2, 0, 70, 320, 30);
             delay(2000);
-            h.relay_off();
-            force_refresh_next_booking();
-            draw_scan_card(qr, menu);
+            g_hardware.relay_off();
+            if (g_network.api) g_network.api->force_refresh_next_booking();
+            draw_scan_card();
         } else {
-            show_session_error("Stop session failed");
+            show_error_screen(errbuf[0] ? errbuf : "Stop session failed");
             delay(5000);
-            draw_confirm_finish(menu);
+            draw_confirm_finish();
         }
     }
 }

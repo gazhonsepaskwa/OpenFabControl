@@ -1,4 +1,4 @@
-#include "../../OFC_Ui.h"
+#include <OFC_Ui.h>
 
 static void format_booking_time_range(const NextBooking& booking, char* out, size_t out_size) {
     if (!booking.has_booking || out_size == 0) {

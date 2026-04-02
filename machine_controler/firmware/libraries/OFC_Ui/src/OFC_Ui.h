@@ -32,6 +32,7 @@ class OFC_Ui {
         OFC_Ui();
         OFC_Ui(String machine_name, Adafruit_ILI9341* tft, NextBooking* next_booking);
        ~OFC_Ui();
+        void begin(String machine_name, Adafruit_ILI9341* tft, NextBooking* next_booking);
 
     // Attribut
     private:
@@ -43,6 +44,12 @@ class OFC_Ui {
         NextBooking*        _next_booking; // pointer to OFC_Hardware::_next_booking
         // timers ( millis() val )
         unsigned long       _last_machine_usage_time_update_ms;
+        int                 _book_session_minutes = 10;
+        int                 _add_time_selected_minutes = 0;
+        int                 _add_time_max_minutes = 0;
+        bool                _add_time_unlimited = false;
+
+        static constexpr int book_session_min_minutes = 10;
 
     // Public Methodes
     public:
@@ -93,9 +100,8 @@ class OFC_Ui {
         void draw_confirm_finish();
         void draw_book_session();
 
-        // TODO see if i expose those or make a wraper (probably a wraper)
-            // void draw_book_session_values();
-            // void draw_add_time_values();
+        void draw_book_session_values();
+        void draw_add_time_values();
 };
 
 // If you see this, thanks for reading my code :D

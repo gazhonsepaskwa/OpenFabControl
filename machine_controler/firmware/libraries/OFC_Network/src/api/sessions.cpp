@@ -1,29 +1,23 @@
-#include <Arduino.h>
+#include "../OFC_Network.h"
+
 #include <ArduinoJson.h>
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <time.h>
-#include <stdlib.h>
-#include <string.h>
+
+#include <cstdio>
+#include <cstring>
 
 #include "firmware.h"
-
-extern OFC_Ui g_ui;
-
-// Use the global hardware instance defined in firmware.ino
-extern OFC_Hardware h;
 
 // Parse RFC3339 UTC datetime (e.g. "2026-03-06T09:51:00Z") to Unix timestamp.
 static int64_t rfc3339_utc_to_unix(const char* s) {
     if (!s || strlen(s) < 19) return 0;
-    int y, mo, d, h, mi, sec;
-    if (sscanf(s, "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &h, &mi, &sec) != 6)
-        return 0;
-    if (y < 1970 || mo < 1 || mo > 12 || d < 1 || d > 31)
-        return 0;
+    int y, mo, d, hh, mi, sec;
+    if (sscanf(s, "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &hh, &mi, &sec) != 6) return 0;
+    if (y < 1970 || mo < 1 || mo > 12 || d < 1 || d > 31) return 0;
 
-    static const int mdays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    static const int mdays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
     int64_t days = 0;
     for (int yr = 1970; yr < y; ++yr)
@@ -34,7 +28,7 @@ static int64_t rfc3339_utc_to_unix(const char* s) {
         days++;
     days += d - 1;
 
-    return days * 86400LL + h * 3600 + mi * 60 + sec;
+    return days * 86400LL + hh * 3600 + mi * 60 + sec;
 }
 
 // Format Unix timestamp to RFC3339 UTC (e.g. "2026-02-25T10:00:00Z").
@@ -47,8 +41,7 @@ static void unix_to_rfc3339_utc(int64_t unix_sec, char* out, size_t out_size) {
     out[out_size - 1] = '\0';
 }
 
-// Map HTTPClient error codes to error msg
-static void set_http_error_msg(int code, char* err_msg, size_t err_size) {
+void Api::set_http_error_msg(int code, char* err_msg, size_t err_size) {
     if (!err_msg || err_size == 0) return;
     const char* msg = "Connection failed";
     if (code == -1) msg = "Connection refused (check server)";
@@ -60,31 +53,36 @@ static void set_http_error_msg(int code, char* err_msg, size_t err_size) {
     err_msg[err_size - 1] = '\0';
 }
 
-bool start_session(const char* access_key, const char* resource_uuid, Session* out, char* err_msg, size_t err_size) {
-    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
-    if (host.length() == 0) {
+bool Api::start_session(const char* access_key, Session* out, char* err_msg, size_t err_size) {
+    if (!out) return false;
+    if (_host.length() == 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "API host not configured");
         return false;
     }
+    if (!access_key || access_key[0] == '\0') {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "access_key required");
+        return false;
+    }
+    if (_resource_uuid.length() == 0) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Resource UUID missing");
+        return false;
+    }
 
-    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/start_session";
-    String body = "{\"access_key\":\"" + String(access_key) + "\",\"resource_uuid\":\"" + String(resource_uuid) + "\"}";
+    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/start_session";
+    String body = "{\"access_key\":\"" + String(access_key) + "\",\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    http.begin(client, url);
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
-    int code = http.POST(body);
+    _http.begin(_client, url);
+    _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
         if (err_msg && err_size > 0) {
             if (code < 0) {
                 set_http_error_msg(code, err_msg, err_size);
             } else {
-                String payload = http.getString();
+                String payload = _http.getString();
                 JsonDocument doc;
                 if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
                     strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
@@ -94,12 +92,12 @@ bool start_session(const char* access_key, const char* resource_uuid, Session* o
                 err_msg[err_size - 1] = '\0';
             }
         }
-        http.end();
+        _http.end();
         return false;
     }
 
-    String payload = http.getString();
-    http.end();
+    String payload = _http.getString();
+    _http.end();
 
     JsonDocument doc;
     if (deserializeJson(doc, payload)) return false;
@@ -125,75 +123,57 @@ bool start_session(const char* access_key, const char* resource_uuid, Session* o
     return true;
 }
 
-bool stop_session(const char* resource_uuid) {
-    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
-    if (host.length() == 0) return false;
+bool Api::stop_session(char* err_msg, size_t err_size) {
+    if (_host.length() == 0) return false;
+    if (_resource_uuid.length() == 0) return false;
 
-    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/stop_session";
-    String body = "{\"resource_uuid\":\"" + String(resource_uuid) + "\"}";
+    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/stop_session";
+    String body = "{\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    http.begin(client, url);
-    http.addHeader("Content-Type", "application/json");
-    int code = http.POST(body);
-    http.end();
+    _http.begin(_client, url);
+    _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    int code = _http.POST(body);
+    _http.end();
 
-    return (code >= 200 && code < 300);
+    if (code >= 200 && code < 300) return true;
+    if (err_msg && err_size) snprintf(err_msg, err_size, "HTTP %d", code);
+    return false;
 }
 
-void show_session_error(const char* msg) {
-    g_ui.show_error_screen(msg);
-}
-
-bool get_max_add_time(const char* resource_uuid, int* out_max, char* err_msg, size_t err_size) {
+bool Api::get_max_add_time(int* out_max, char* err_msg, size_t err_size) {
     if (!out_max) return false;
-
-    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
-    if (host.length() == 0) {
+    if (_host.length() == 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "API host not configured");
         return false;
     }
-
-    if (!resource_uuid || resource_uuid[0] == '\0') {
+    if (_resource_uuid.length() == 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "Resource UUID missing");
         return false;
     }
 
-    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/get_max_add_time";
-    String body = "{\"resource_uuid\":\"" + String(resource_uuid) + "\"}";
+    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/get_max_add_time";
+    String body = "{\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    http.begin(client, url);
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
-    int code = http.POST(body);
+    _http.begin(_client, url);
+    _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
         if (err_msg && err_size > 0) {
-            if (code < 0) {
-                set_http_error_msg(code, err_msg, err_size);
-            } else {
-                String payload = http.getString();
-                JsonDocument doc;
-                if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
-                    strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
-                } else {
-                    snprintf(err_msg, err_size, "HTTP %d", code);
-                }
-                err_msg[err_size - 1] = '\0';
-            }
+            if (code < 0) set_http_error_msg(code, err_msg, err_size);
+            else snprintf(err_msg, err_size, "HTTP %d", code);
+            err_msg[err_size - 1] = '\0';
         }
-        http.end();
+        _http.end();
         return false;
     }
 
-    String payload = http.getString();
-    http.end();
+    String payload = _http.getString();
+    _http.end();
 
     JsonDocument doc;
     if (deserializeJson(doc, payload)) {
@@ -209,43 +189,36 @@ bool get_max_add_time(const char* resource_uuid, int* out_max, char* err_msg, si
     return true;
 }
 
-bool add_time(const char* resource_uuid, int add_minutes, Session* out, char* err_msg, size_t err_size) {
+bool Api::add_time(int add_minutes, Session* out, char* err_msg, size_t err_size) {
     if (!out) return false;
-
     if (add_minutes <= 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "add_minutes must be > 0");
         return false;
     }
-
-    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
-    if (host.length() == 0) {
+    if (_host.length() == 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "API host not configured");
         return false;
     }
-
-    if (!resource_uuid || resource_uuid[0] == '\0') {
+    if (_resource_uuid.length() == 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "Resource UUID missing");
         return false;
     }
 
-    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/add_time";
-    String body = "{\"resource_uuid\":\"" + String(resource_uuid) + "\",\"add_minutes\":" + String(add_minutes) + "}";
+    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/add_time";
+    String body = "{\"resource_uuid\":\"" + _resource_uuid + "\",\"add_minutes\":" + String(add_minutes) + "}";
 
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    http.begin(client, url);
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
-    int code = http.POST(body);
+    _http.begin(_client, url);
+    _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    int code = _http.POST(body);
 
     if (code < 200 || code >= 300) {
         if (err_msg && err_size > 0) {
             if (code < 0) {
                 set_http_error_msg(code, err_msg, err_size);
             } else {
-                String payload = http.getString();
+                String payload = _http.getString();
                 JsonDocument doc;
                 if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
                     strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
@@ -255,12 +228,12 @@ bool add_time(const char* resource_uuid, int add_minutes, Session* out, char* er
                 err_msg[err_size - 1] = '\0';
             }
         }
-        http.end();
+        _http.end();
         return false;
     }
 
-    String payload = http.getString();
-    http.end();
+    String payload = _http.getString();
+    _http.end();
 
     JsonDocument doc;
     if (deserializeJson(doc, payload)) {
@@ -292,51 +265,49 @@ bool add_time(const char* resource_uuid, int add_minutes, Session* out, char* er
     return true;
 }
 
-bool create_session(const char* access_key, const char* resource_uuid, int duration_minutes, Session* out, char* err_msg, size_t err_size) {
+bool Api::create_session(const char* access_key, int duration_minutes, Session* out, char* err_msg, size_t err_size) {
     if (!out) return false;
-    if (duration_minutes < 10) {
-        if (err_msg && err_size) snprintf(err_msg, err_size, "Duration must be at least 10 minutes");
+    if (duration_minutes < BOOK_SESSION_MIN_MINUTES) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Duration must be at least %d minutes", BOOK_SESSION_MIN_MINUTES);
         return false;
     }
-
-    String host = preferences.getString(MACHINE_API_HOST_KEY, "");
-    if (host.length() == 0) {
+    if (_host.length() == 0) {
         if (err_msg && err_size) snprintf(err_msg, err_size, "API host not configured");
         return false;
     }
-    if (!access_key || access_key[0] == '\0' || !resource_uuid || resource_uuid[0] == '\0') {
-        if (err_msg && err_size) snprintf(err_msg, err_size, "access_key and resource_uuid required");
+    if (!access_key || access_key[0] == '\0') {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "access_key required");
+        return false;
+    }
+    if (_resource_uuid.length() == 0) {
+        if (err_msg && err_size) snprintf(err_msg, err_size, "Resource UUID missing");
         return false;
     }
 
     time_t now_sec = time(nullptr);
-    // start slightly in the future to satisfy backend constraint
-    int64_t start_sec = (int64_t)now_sec + 2;
+    int64_t start_sec = (int64_t)now_sec + 2; // backend constraint
     int64_t end_sec = start_sec + (int64_t)duration_minutes * 60;
     char started_buf[32];
     char ended_buf[32];
     unix_to_rfc3339_utc(start_sec, started_buf, sizeof(started_buf));
     unix_to_rfc3339_utc(end_sec, ended_buf, sizeof(ended_buf));
 
-    String url = "https://" + host + ":" + String(MACHINE_API_PORT) + "/machine-api/create_session";
-    String body = "{\"access_key\":\"" + String(access_key) + "\",\"resource_uuid\":\"" + String(resource_uuid)
+    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/create_session";
+    String body = "{\"access_key\":\"" + String(access_key) + "\",\"resource_uuid\":\"" + _resource_uuid
         + "\",\"started_at\":\"" + String(started_buf) + "\",\"ended_at\":\"" + String(ended_buf) + "\"}";
 
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    http.begin(client, url);
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(MACHINE_API_TIMEOUT_MS);
-    http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
-    int code = http.POST(body);
+    _http.begin(_client, url);
+    _http.addHeader("Content-Type", "application/json");
+    _http.setTimeout(MACHINE_API_TIMEOUT_MS);
+    _http.setConnectTimeout(MACHINE_API_TIMEOUT_MS);
+    int code = _http.POST(body);
 
     if (code != 201) {
         if (err_msg && err_size > 0) {
             if (code < 0) {
                 set_http_error_msg(code, err_msg, err_size);
             } else {
-                String payload = http.getString();
+                String payload = _http.getString();
                 JsonDocument doc;
                 if (!deserializeJson(doc, payload) && doc.containsKey("error")) {
                     strncpy(err_msg, doc["error"].as<const char*>(), err_size - 1);
@@ -346,12 +317,12 @@ bool create_session(const char* access_key, const char* resource_uuid, int durat
                 err_msg[err_size - 1] = '\0';
             }
         }
-        http.end();
+        _http.end();
         return false;
     }
 
-    String payload = http.getString();
-    http.end();
+    String payload = _http.getString();
+    _http.end();
 
     JsonDocument doc;
     if (deserializeJson(doc, payload)) {
@@ -382,3 +353,4 @@ bool create_session(const char* access_key, const char* resource_uuid, int durat
 
     return true;
 }
+

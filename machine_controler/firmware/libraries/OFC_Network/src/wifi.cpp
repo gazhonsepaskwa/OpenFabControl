@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include "firmware.h"
 
-extern Preferences preferences;
 extern bool wifi_connection_lost;
 
 void OFC_Network::connectToWifi() {

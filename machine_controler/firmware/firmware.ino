@@ -4,7 +4,7 @@
 #include <Print.h>
 #include <HardwareSerial.h>
 #include <Preferences.h>
-#include "libraries/OFC_Setup_process/src/OFC_Setup_process.h"
+#include <OFC_Setup_process.h>
 #include "preference_keys.h"
 #include "firmware.h"
 
@@ -43,13 +43,16 @@ void setup() {
     g_preferences.begin("settings", false); // false => read & write
 
     // Hardware init
-    g_hardware = OFC_Hardware();
+    g_hardware.begin();
 
     // Ui init
-    g_ui = OFC_Ui(  g_preferences.getString(MACHINE_NAME_KEY).c_str(),
-                    &g_hardware.tft,
-                    g_network.api->get_next_booking()
-                  );
+    // g_network is not initialized yet here (api == nullptr). Keep a safe default next booking for UI.
+    g_next_booking = {};
+    g_ui.begin(
+        g_preferences.getString(MACHINE_NAME_KEY).c_str(),
+        &g_hardware.tft,
+        &g_next_booking
+    );
 
     OFC_Setup_process setup_process;
     // Setup process if settings not saved
@@ -66,7 +69,7 @@ void setup() {
     // Note: reading from NVS is limmited in number of operations and should be done the least possible
     String sta_ssid = g_preferences.getString(WIFI_STA_SSID_KEY, "");
     String sta_pass = g_preferences.getString(WIFI_STA_PASS_KEY, "");
-    g_network = OFC_Network(sta_ssid, sta_pass, g_preferences.getString(UUID_KEY, ""), g_preferences.getString(MACHINE_API_HOST_KEY, ""));
+    g_network.begin(sta_ssid, sta_pass, g_preferences.getString(UUID_KEY, ""), g_preferences.getString(MACHINE_API_HOST_KEY, ""));
     g_network.connectToWifi();
     if (g_network.isWifiConnected()) {
         g_network.setTimezone();
@@ -77,7 +80,23 @@ void setup() {
     int first_time = true;
     // if not approved (or server not reachable) display waiting approval screen
     // TODO : disociate the two
-    while (!g_network.api->is_approved_by_admin(g_preferences)) { // TODO
+    while (true) {
+        int http_code = 0;
+        bool approved = (g_network.api && g_network.api->is_approved_by_admin(&http_code));
+        if (approved) break;
+
+        if (http_code == 404) {
+            Serial.println("KO: machine not found");
+            g_ui.clear_screen();
+            g_ui.waiting_approval();
+            while (true) {
+                if (g_hardware.mcp2.digitalRead(BTN_L) == LOW || g_hardware.mcp2.digitalRead(BTN_R) == LOW) {
+                    g_preferences.clear();
+                    ESP.restart();
+                }
+                delay(100);
+            }
+        }
         if (first_time) {
             first_time = false;
             g_ui.clear_screen();
@@ -129,6 +148,7 @@ void loop() {
         while (btnL_state == LOW) {
             // maybe do something on the UI so the user now he need unpress the button
             btnL_state = g_hardware.getButtonLeftState();
+            delay(1); // avoid watchdog reset while waiting
         }
         unsigned long duration = millis() - press_start;
         // up to here
@@ -148,6 +168,7 @@ void loop() {
         // wait the button to be released
         while (btnR_state == LOW) {
             btnR_state = g_hardware.getButtonRightState();
+            delay(1); // avoid watchdog reset while waiting
         }
         unsigned long duration = millis() - press_start;
 
@@ -180,3 +201,4 @@ void loop() {
 
     g_hardware.nfc.reset();
 }
+

@@ -8,12 +8,12 @@
 class OFC_Setup_process {
     // Constructor / Destructor
     public:
-        OFC_Setup_process(OFC_Ui* ui, Preferences* pref);
-       ~OFC_Setup_process();
+        OFC_Setup_process();
+       ~OFC_Setup_process() = default;
 
     // Public Methodes
     public:
-        bool begin();
+        bool begin(Preferences& preferences, OFC_Ui& ui);
 
     // Private Methodes
     private:
@@ -24,6 +24,9 @@ class OFC_Setup_process {
         void connect_to_sta_wifi();
         int  register_machine_to_api();
         void setup_cleanup();
+        void display_ap_instructions(const char* ap_ssid, const char* ap_pass);
+        void show_error_and_restart(const char* msg);
+        void show_setup_complete();
 
     // Private Attribut
     private:
@@ -35,7 +38,4 @@ class OFC_Setup_process {
         DNSServer     _dnsServer;
         WebServer     _server;
         SetupFormData _form_data = {};
-
-
-
-}
+};

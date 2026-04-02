@@ -42,17 +42,29 @@ class Api {
         String              _host;
         WiFiClientSecure    _client;
         HTTPClient          _http;
+        unsigned long       _last_next_booking_refresh_ms = 0;
 
     // Privates Methodes
     private:
         bool fetchNextBooking(NextBooking* out);
         bool next_booking_equals(const NextBooking& a, const NextBooking& b);
+        void set_http_error_msg(int code, char* err_msg, size_t err_size);
 
     // Methodes
     public:
         bool refresh_next_booking_if_needed(void);
         void force_refresh_next_booking(void);
         NextBooking get_next_booking(void);
+
+        // Returns true when approved. If out_http_code is provided, it will contain the last HTTP status code.
+        bool is_approved_by_admin(int* out_http_code = nullptr);
+
+        // Session-related endpoints (migrated from firmware/sessions.ino)
+        bool create_session(const char* access_key, int duration_minutes, Session* out, char* err_msg, size_t err_size);
+        bool start_session(const char* access_key, Session* out, char* err_msg, size_t err_size);
+        bool stop_session(char* err_msg, size_t err_size);
+        bool get_max_add_time(int* out_max, char* err_msg, size_t err_size);
+        bool add_time(int add_minutes, Session* out, char* err_msg, size_t err_size);
 
 };
 
@@ -61,6 +73,7 @@ class OFC_Network {
         OFC_Network();
         OFC_Network(String ssid, String password, String resource_uuid, String host);
        ~OFC_Network();
+        void begin(String ssid, String password, String resource_uuid, String host);
 
         void connectToWifi();
         bool isWifiConnected();
