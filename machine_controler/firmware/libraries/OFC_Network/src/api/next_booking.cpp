@@ -43,7 +43,7 @@ bool Api::fetchNextBooking(NextBooking* out) {
         return false;
     }
 
-    String url = "https://" + _host + "/machine-api/next_booking"; //this->host + ":" + String(MACHINE_API_PORT)
+    String url = "https://" + _host + "/machine-api/next_booking";
     String body = "{\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
     _http.begin(_client, url);

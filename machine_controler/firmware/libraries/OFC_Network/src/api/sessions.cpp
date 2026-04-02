@@ -68,7 +68,7 @@ bool Api::start_session(const char* access_key, Session* out, char* err_msg, siz
         return false;
     }
 
-    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/start_session";
+    String url = "https://" + _host + "/machine-api/start_session";
     String body = "{\"access_key\":\"" + String(access_key) + "\",\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
     _http.begin(_client, url);
@@ -127,7 +127,7 @@ bool Api::stop_session(char* err_msg, size_t err_size) {
     if (_host.length() == 0) return false;
     if (_resource_uuid.length() == 0) return false;
 
-    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/stop_session";
+    String url = "https://" + _host + "/machine-api/stop_session";
     String body = "{\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
     _http.begin(_client, url);
@@ -153,7 +153,7 @@ bool Api::get_max_add_time(int* out_max, char* err_msg, size_t err_size) {
         return false;
     }
 
-    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/get_max_add_time";
+    String url = "https://" + _host + "/machine-api/get_max_add_time";
     String body = "{\"resource_uuid\":\"" + _resource_uuid + "\"}";
 
     _http.begin(_client, url);
@@ -204,7 +204,7 @@ bool Api::add_time(int add_minutes, Session* out, char* err_msg, size_t err_size
         return false;
     }
 
-    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/add_time";
+    String url = "https://" + _host + "/machine-api/add_time";
     String body = "{\"resource_uuid\":\"" + _resource_uuid + "\",\"add_minutes\":" + String(add_minutes) + "}";
 
     _http.begin(_client, url);
@@ -292,7 +292,7 @@ bool Api::create_session(const char* access_key, int duration_minutes, Session* 
     unix_to_rfc3339_utc(start_sec, started_buf, sizeof(started_buf));
     unix_to_rfc3339_utc(end_sec, ended_buf, sizeof(ended_buf));
 
-    String url = "https://" + _host + ":" + String(MACHINE_API_PORT) + "/machine-api/create_session";
+    String url = "https://" + _host + "/machine-api/create_session";
     String body = "{\"access_key\":\"" + String(access_key) + "\",\"resource_uuid\":\"" + _resource_uuid
         + "\",\"started_at\":\"" + String(started_buf) + "\",\"ended_at\":\"" + String(ended_buf) + "\"}";
 

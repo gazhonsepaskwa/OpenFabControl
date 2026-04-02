@@ -24,7 +24,7 @@ static void format_booking_time_range(const NextBooking& booking, char* out, siz
 
 void OFC_Ui::draw_scan_card() {
     clear_screen();
-    //draw_title((char*)preferences.getString(MACHINE_NAME_KEY).c_str());
+    draw_title((char*)_machine_name.c_str());
 
     time_t now_sec = time(nullptr);
     struct tm now_tm = {};

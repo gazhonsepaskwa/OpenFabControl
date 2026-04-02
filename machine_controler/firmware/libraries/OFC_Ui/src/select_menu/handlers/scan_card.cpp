@@ -14,7 +14,7 @@ extern Session      g_current_session;
 void OFC_Ui::menu_handler_scan_card(Event ev) {
     switch (ev) {
         case Event::EVENT_BTN_LEFT:
-            //draw_machine_info(qr, menu);
+            draw_machine_info();
             break;
 
         case Event::EVENT_CARD:

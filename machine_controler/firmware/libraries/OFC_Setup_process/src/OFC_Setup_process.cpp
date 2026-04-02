@@ -138,7 +138,7 @@ int OFC_Setup_process::register_machine_to_api() {
 
     String body = "{\"uuid\":\"" + String(uuid) + "\",\"name\":\"" + String(_form_data.machine_name)
         + "\",\"type\":\"" + String(MACHINE_TYPE) + "\"}";
-    String url = "https://" + String(_form_data.api_host) + ":" + String(MACHINE_API_PORT) + "/machine-api/register";
+    String url = "https://" + String(_form_data.api_host) + "/machine-api/register";
 
     WiFiClientSecure client;
     client.setInsecure();
