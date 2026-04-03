@@ -34,10 +34,7 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check password
-	var hash, status string
-	var userID int
-	err := database.Self.QueryRow(`SELECT password, id, status FROM users WHERE email = $1`, payload.EMAIL).Scan(&hash, &userID, &status)
+	hash, profile, err := fetchUserByEmailForLogin(payload.EMAIL)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			utils.Respond_error(w, "Invalid credential", http.StatusForbidden)
@@ -51,6 +48,8 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 		utils.Respond_error(w, "Invalid credential", http.StatusForbidden)
 		return
 	}
+
+	userID := profile.ID
 
 	// enforce account status (same logic as auth middleware)
 	if utils.Reject_user_status(w, userID, []string{"pending", "desactivated"}) != nil {
@@ -76,6 +75,13 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	roles, err := fetchRolesForUser(userID)
+	if err != nil {
+		utils.Respond_error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	profile.Roles = roles
+
 	// JWT token
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := model.Claims{
@@ -98,5 +104,6 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 	utils.Respond_json(w, map[string]any{
 		"msg":   "logged in successfully",
 		"token": tokenString,
+		"user":  profile,
 	}, http.StatusOK)
 }

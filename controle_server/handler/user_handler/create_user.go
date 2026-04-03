@@ -143,9 +143,9 @@ func Create_user(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send email to create password
-	// if err = sendConfirmationEmail(payload.EMAIL, os.Getenv("DOMAIN_NAME") + "/confirm-email?code=" + verif_code); err != nil {
-	// utils.Respond_error(w, fmt.Sprintf("Error sending the email: %v", err), http.StatusInternalServerError)
-	// }
+	if err = sendConfirmationEmail(payload.EMAIL, os.Getenv("DOMAIN_NAME") + "/confirm-email?code=" + verif_code); err != nil {
+	utils.Respond_error(w, fmt.Sprintf("Error sending the email: %v", err), http.StatusInternalServerError)
+	}
 
 	// do NOT leave the confirm link here (test purpose only)
 	utils.Respond_json(w, map[string]any{

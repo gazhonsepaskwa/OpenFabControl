@@ -23,6 +23,7 @@ func Setup_routes() {
 	http.HandleFunc("/machine-api/next_booking", session_handler.Next_booking)
 	http.HandleFunc("/machine-api/add_time", session_handler.Add_time)
 	http.HandleFunc("/machine-api/get_max_add_time", session_handler.Get_max_add_time)
+	http.HandleFunc("/machine-api/update_time_used", session_handler.Update_time_used)
 	http.HandleFunc("/machine-api/create_user", user_handler.Create_user)
 
 	///////////////////////

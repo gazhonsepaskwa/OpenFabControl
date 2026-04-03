@@ -165,6 +165,26 @@ Returns how many minutes can be added to the current active session without over
 
 ---
 
+### POST /machine-api/update_time_used
+Updates `time_used` (seconds) on the currently active session for a machine. The server keeps the **maximum** of the stored value and the value sent (monotone; never decreases).
+
+**Input (JSON):**
+| Parameter          | Type   | Required | Description                            |
+|--------------------|--------|----------|----------------------------------------|
+| resource_uuid      | string | yes      | Machine UUID                           |
+| time_used_seconds  | int    | yes      | Reported usage in seconds (>= 0)       |
+
+**Outputs:**
+| Code | Body                                                                 |
+|------|----------------------------------------------------------------------|
+| 200  | `{"session":{id,user_id,resource_uuid,started_at,ended_at,time_used,status:"progress"}}` |
+| 400  | `{"error":"invalid payload: resource_uuid cannot be empty"}` or `{"error":"invalid payload: time_used_seconds must be >= 0"}` |
+| 404  | `{"error":"No active session in progress for this resource"}`        |
+| 405  | `{"error":"Method not allowed"}`                                      |
+| 500  | `{"error":"Internal Server Error"}`                                   |
+
+---
+
 ### POST /machine-api/create_user
 Creates a user (same handler as admin).
 
@@ -202,7 +222,7 @@ Admin login with credentials.
 **Outputs:**
 | Code | Body                                                                   |
 |------|------------------------------------------------------------------------|
-| 200  | `{"msg":"logged in successfully","token":"<JWT>"}`                     |
+| 200  | `{"msg":"logged in successfully","token":"<JWT>","user":{id,email,access_key,first_name,last_name,tva,facturation_address,facturation_account,status,created_at,roles:[{id,name,created_at},...]}}` |
 | 403  | `{"error":"Invalid credential"}` or `{"error":"Forbidden"}`            |
 | 400  | `{"error":"invalid payload: email/password cannot be empty"}`          |
 | 405  | `{"error":"Method not allowed"}`                                       |
@@ -657,7 +677,7 @@ Login with credentials.
 **Outputs:**
 | Code | Body                                                  |
 |------|--------------------------------------------------------|
-| 200  | `{"msg":"logged in successfully","token":"<JWT>"}`     |
+| 200  | `{"msg":"logged in successfully","token":"<JWT>","user":{id,email,access_key,first_name,last_name,tva,facturation_address,facturation_account,status,created_at,roles:[{id,name,created_at},...]}}` |
 | 403  | `{"error":"Invalid credential"}`                       |
 | 400  | `{"error":"invalid payload: email/password cannot be empty"}` |
 | 405  | `{"error":"Method not allowed"}`                       |
@@ -668,10 +688,4 @@ Login with credentials.
 ## TODO (routes to implement)
 
 ### Users
-- POST /web-user-api/me
 - POST /web-user-api/edit_profile
-- POST /web-user-api/logout
-- POST /web-admin-api/logout
-
-### Machine controllers
-- POST /machine-api/update_time_used
