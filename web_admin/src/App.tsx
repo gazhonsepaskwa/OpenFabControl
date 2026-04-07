@@ -1,10 +1,11 @@
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DevicesIcon from '@mui/icons-material/Devices';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PeopleIcon from '@mui/icons-material/People';
-import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
+import SettingsIcon from '@mui/icons-material/Settings';
 import {
   AppBar,
   BottomNavigation,
@@ -21,20 +22,31 @@ import {
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useEffect, useMemo, useState } from 'react';
+import BookingPanel from './components/BookingPanel';
 import DevicesPanel from './components/DevicesPanel';
 import LoginPage from './components/LoginPage';
 import RolesPanel from './components/RolesPanel';
+import SettingsPanel from './components/SettingsPanel';
 import SubscriptionsPanel from './components/SubscriptionsPanel';
 import UsersPanel from './components/UsersPanel';
 
 const ADMIN_ROLE_ID = 1;
 
+const NAV_ITEMS = [
+  { label: 'Users', index: 0, icon: PeopleIcon },
+  { label: 'Roles', index: 1, icon: AdminPanelSettingsIcon },
+  // { label: 'Subscriptions', index: 2, icon: SubscriptionsIcon },
+  { label: 'Devices', index: 3, icon: DevicesIcon },
+  { label: 'Booking', index: 4, icon: CalendarMonthIcon },
+  { label: 'Settings', index: 5, icon: SettingsIcon },
+];
+
 /** Tabs every authenticated user can access, regardless of role. */
-const DEFAULT_ACCESSIBLE_TABS = [0, 1];
+const DEFAULT_ACCESSIBLE_TABS = [4, 5];
 
 /** Maps a role ID to the full set of tab indices that role may access. */
 const TAB_ACCESS_BY_ROLE: Record<number, number[]> = {
-  [ADMIN_ROLE_ID]: [0, 1, 2, 3],
+  [ADMIN_ROLE_ID]: [0, 1, 2, 3, 4, 5],
 };
 
 function getAccessibleTabs(roles: { id: number }[]): number[] {
@@ -44,13 +56,6 @@ function getAccessibleTabs(roles: { id: number }[]): number[] {
   }
   return Array.from(tabs).sort((a, b) => a - b);
 }
-
-const NAV_ITEMS = [
-  { label: 'Users', index: 0, icon: PeopleIcon },
-  { label: 'Roles', index: 1, icon: AdminPanelSettingsIcon },
-  { label: 'Subscriptions', index: 2, icon: SubscriptionsIcon },
-  { label: 'Devices', index: 3, icon: DevicesIcon },
-];
 
 type ThemeMode = 'light' | 'dark';
 
@@ -104,7 +109,7 @@ function App() {
     const tabs = getAccessibleTabs(roles);
     setAccessibleTabs(tabs);
     const hasAdminRole = roles.some((r) => r.id === ADMIN_ROLE_ID);
-    setTabValue(hasAdminRole ? 0 : 1);
+    setTabValue(hasAdminRole ? 0 : 4);
     setIsLoggedIn(true);
   };
 
@@ -170,6 +175,8 @@ function App() {
             {tabValue === 1 && <RolesPanel />}
             {tabValue === 2 && <SubscriptionsPanel />}
             {tabValue === 3 && <DevicesPanel />}
+            {tabValue === 4 && <BookingPanel />}
+            {tabValue === 5 && <SettingsPanel />}
           </Box>
 
           {/* Mobile tabs */}
