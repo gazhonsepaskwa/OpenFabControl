@@ -1,6 +1,7 @@
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Alert, Avatar, Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
+import { getBaseUrl } from '../api';
 
 interface Role {
   id: number;
@@ -38,7 +39,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     setLoading(true);
 
     try {
-      const response = await fetch(`https://${window.location.hostname}:4080/web-user-api/login`, {
+      const response = await fetch(`${getBaseUrl()}/web-user-api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

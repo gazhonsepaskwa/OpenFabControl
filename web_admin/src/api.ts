@@ -1,3 +1,7 @@
+export function getBaseUrl(): string {
+  return import.meta.env.DEV ? `https://${window.location.hostname}:4080` : '';
+}
+
 /**
  * Thin wrapper around `fetch` that automatically injects the
  * `Authorization: Bearer <token>` header for every request,
@@ -11,5 +15,5 @@ export function apiFetch(url: string, options: RequestInit = {}): Promise<Respon
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  return fetch(`https://${window.location.hostname}:4080${url}`, { ...options, headers });
+  return fetch(`${getBaseUrl()}${url}`, { ...options, headers });
 }
