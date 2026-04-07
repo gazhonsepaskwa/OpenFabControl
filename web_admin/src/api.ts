@@ -11,5 +11,5 @@ export function apiFetch(url: string, options: RequestInit = {}): Promise<Respon
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  return fetch(url, { ...options, headers });
+  return fetch(`https://${window.location.hostname}:4080${url}`, { ...options, headers });
 }

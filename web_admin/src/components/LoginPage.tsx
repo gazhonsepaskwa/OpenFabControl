@@ -38,7 +38,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     setLoading(true);
 
     try {
-      const response = await fetch('/web-admin-api/login', {
+      const response = await fetch(`https://${window.location.hostname}:4080/web-user-api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
