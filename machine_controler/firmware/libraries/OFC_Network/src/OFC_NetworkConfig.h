@@ -23,4 +23,3 @@ static constexpr int OFC_BOOK_SESSION_MIN_MINUTES = 10;
 
 // POST /machine-api/update_time_used while on MACHINE_USAGE (active time from GPA1).
 static constexpr unsigned long OFC_UPDATE_TIME_USED_INTERVAL_MS = 15000UL;
-
