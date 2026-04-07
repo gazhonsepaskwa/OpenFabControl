@@ -29,6 +29,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '../api';
 
 const API_BASE = '/web-admin-api';
 
@@ -145,8 +146,8 @@ function DevicesPanel() {
     setError(null);
     try {
       const [notApprovedRes, approvedRes] = await Promise.all([
-        fetch(`${API_BASE}/get_resource_list_to_approve`),
-        fetch(`${API_BASE}/get_resource_list_approved`),
+        apiFetch(`${API_BASE}/get_resource_list_to_approve`),
+        apiFetch(`${API_BASE}/get_resource_list_approved`),
       ]);
 
       if (!notApprovedRes.ok || !approvedRes.ok) {
@@ -179,7 +180,7 @@ function DevicesPanel() {
 
   const handleApprove = async (uuid: string) => {
     try {
-      const res = await fetch(`${API_BASE}/approve_resource`, {
+      const res = await apiFetch(`${API_BASE}/approve_resource`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuid }),
@@ -198,7 +199,7 @@ function DevicesPanel() {
 
   const handleUnapprove = async (uuid: string) => {
     try {
-      const res = await fetch(`${API_BASE}/unapprove_resource`, {
+      const res = await apiFetch(`${API_BASE}/unapprove_resource`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuid }),

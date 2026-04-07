@@ -1,1 +1,14 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/devicespanel.tsx","./src/components/rolespanel.tsx","./src/components/subscriptionspanel.tsx","./src/components/userspanel.tsx"],"version":"5.9.3"}
+{
+  "root": [
+    "./src/app.tsx",
+    "./src/api.ts",
+    "./src/main.tsx",
+    "./src/vite-env.d.ts",
+    "./src/components/devicespanel.tsx",
+    "./src/components/loginpage.tsx",
+    "./src/components/rolespanel.tsx",
+    "./src/components/subscriptionspanel.tsx",
+    "./src/components/userspanel.tsx"
+  ],
+  "version": "5.9.3"
+}

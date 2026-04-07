@@ -30,6 +30,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { apiFetch } from '../api';
 
 const API_BASE = '/web-admin-api';
 
@@ -72,7 +73,7 @@ function UsersPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/get_user_list`);
+      const res = await apiFetch(`${API_BASE}/get_user_list`);
 
       if (!res.ok) {
         throw new Error('Failed to fetch users');
@@ -165,7 +166,7 @@ function UsersPanel() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await apiFetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -190,7 +191,7 @@ function UsersPanel() {
 
   const handleConfirmDelete = async () => {
     try {
-      const res = await fetch(`${API_BASE}/delete_user`, {
+      const res = await apiFetch(`${API_BASE}/delete_user`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: deleteConfirmDialog.userId }),
@@ -223,12 +224,12 @@ function UsersPanel() {
 
     try {
       const [rolesRes, availableRes] = await Promise.all([
-        fetch(`${API_BASE}/get_user_roles`, {
+        apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId }),
         }),
-        fetch(`${API_BASE}/get_role_list`),
+        apiFetch(`${API_BASE}/get_role_list`),
       ]);
 
       if (rolesRes.ok) {
@@ -268,7 +269,7 @@ function UsersPanel() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/assign_role_to_user`, {
+      const res = await apiFetch(`${API_BASE}/assign_role_to_user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -280,7 +281,7 @@ function UsersPanel() {
       if (res.ok) {
         setSelectedRoleId('');
         // Refresh user roles
-        const rolesRes = await fetch(`${API_BASE}/get_user_roles`, {
+        const rolesRes = await apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: selectedUserForRoles }),
@@ -303,7 +304,7 @@ function UsersPanel() {
     if (!selectedUserForRoles) return;
 
     try {
-      const res = await fetch(`${API_BASE}/remove_role_from_user`, {
+      const res = await apiFetch(`${API_BASE}/remove_role_from_user`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -314,7 +315,7 @@ function UsersPanel() {
 
       if (res.ok) {
         // Refresh user roles
-        const rolesRes = await fetch(`${API_BASE}/get_user_roles`, {
+        const rolesRes = await apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: selectedUserForRoles }),
