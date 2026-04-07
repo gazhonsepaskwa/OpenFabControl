@@ -23,6 +23,7 @@ import {
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useEffect, useMemo, useState } from 'react';
 import BookingPanel from './components/BookingPanel';
+import ConfirmEmailPage from './components/ConfirmEmailPage';
 import DevicesPanel from './components/DevicesPanel';
 import LoginPage from './components/LoginPage';
 import RolesPanel from './components/RolesPanel';
@@ -41,13 +42,13 @@ const NAV_ITEMS = [
   { label: 'Settings', index: 5, icon: SettingsIcon },
 ];
 
-/** Tabs every authenticated user can access, regardless of role. */
 const DEFAULT_ACCESSIBLE_TABS = [4, 5];
 
-/** Maps a role ID to the full set of tab indices that role may access. */
 const TAB_ACCESS_BY_ROLE: Record<number, number[]> = {
   [ADMIN_ROLE_ID]: [0, 1, 2, 3, 4, 5],
 };
+
+type ThemeMode = 'light' | 'dark';
 
 function getAccessibleTabs(roles: { id: number }[]): number[] {
   const tabs = new Set<number>(DEFAULT_ACCESSIBLE_TABS);
@@ -57,9 +58,13 @@ function getAccessibleTabs(roles: { id: number }[]): number[] {
   return Array.from(tabs).sort((a, b) => a - b);
 }
 
-type ThemeMode = 'light' | 'dark';
+function getConfirmEmailCode(): string | null {
+  if (window.location.pathname !== '/confirm-email') return null;
+  return new URLSearchParams(window.location.search).get('code');
+}
 
 function App() {
+  const confirmEmailCode = getConfirmEmailCode();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!sessionStorage.getItem('token'));
   const [tabValue, setTabValue] = useState(0);
   const [accessibleTabs, setAccessibleTabs] = useState<number[]>(() => {
@@ -118,11 +123,17 @@ function App() {
     window.location.reload();
   };
 
+  const handleAccountConfirmation = () => {
+    window.location.href = '/';
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
 
-      {!isLoggedIn ? (
+      {confirmEmailCode !== null ? (
+        <ConfirmEmailPage activationCode={confirmEmailCode} onSetupComplete={handleAccountConfirmation} />
+      ) : !isLoggedIn ? (
         <LoginPage onLoginSuccess={handleLoginSuccess} />
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -130,7 +141,7 @@ function App() {
           <AppBar position="static">
             <Toolbar>
               <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                OpenFabControl Admin
+                OpenFabControl
               </Typography>
               <IconButton color="inherit" onClick={toggleThemeMode} aria-label="toggle theme">
                 {themeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
