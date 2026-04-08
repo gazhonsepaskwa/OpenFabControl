@@ -204,6 +204,51 @@ Creates a user (same handler as admin).
 
 ---
 
+### GET /machine-api/last-firmware-version
+Returns the last firmware version available in the firmware folder.
+
+**Input:** none (GET)
+
+**Outputs:**
+| Code | Body |
+|------|------|
+| 200  | `{"version":"0.1"}` |
+| 404  | `{"error":"firmware.version not found"}` |
+| 405  | `{"error":"Method not allowed"}` |
+| 500  | `{"error":"FIRMWARE_FOLDER_PATH is not configured"}` or `{"error":"invalid firmware.version json"}` or `{"error":"Internal Server Error"}` |
+
+---
+
+### GET /machine-api/firmware
+Returns the firmware binary (`firmware.bin`) to flash via OTA.
+
+**Input:** none (GET)
+
+**Outputs:**
+| Code | Headers | Body |
+|------|---------|------|
+| 200  | `Content-Type: application/octet-stream` and `Content-Length: <exact size>` | raw binary (`firmware.bin`) |
+| 404  | `Content-Type: application/json` | `{"error":"firmware.bin not found"}` |
+| 405  | `Content-Type: application/json` | `{"error":"Method not allowed"}` |
+| 500  | `Content-Type: application/json` | `{"error":"FIRMWARE_FOLDER_PATH is not configured"}` or `{"error":"Internal Server Error"}` |
+
+---
+
+### GET /machine-api/firmware-checksum
+Returns the SHA-256 checksum (hex) of the current firmware binary (`firmware.bin`) in the firmware folder.
+
+**Input:** none (GET)
+
+**Outputs:**
+| Code | Body |
+|------|------|
+| 200  | `{"sha256":"0123abcd...64-hex-chars..."}` |
+| 404  | `{"error":"firmware.bin not found"}` |
+| 405  | `{"error":"Method not allowed"}` |
+| 500  | `{"error":"FIRMWARE_FOLDER_PATH is not configured"}` or `{"error":"Internal Server Error"}` |
+
+---
+
 ## Admin API
 
 **Auth:** `Authorization: Bearer <JWT>` **required on all** `/web-admin-api/*` routes **except** `POST /web-admin-api/login`.

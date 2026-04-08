@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"OpenFabControl/handler/firmware_handler"
 	"OpenFabControl/handler/resource_handler"
 	"OpenFabControl/handler/role_handler"
 	"OpenFabControl/handler/session_handler"
@@ -25,6 +26,9 @@ func Setup_routes() {
 	http.HandleFunc("/machine-api/get_max_add_time", session_handler.Get_max_add_time)
 	http.HandleFunc("/machine-api/update_time_used", session_handler.Update_time_used)
 	http.HandleFunc("/machine-api/create_user", user_handler.Create_user)
+	http.HandleFunc("/machine-api/last-firmware-version", firmware_handler.Last_firmware_version)
+	http.HandleFunc("/machine-api/firmware", firmware_handler.Firmware)
+	http.HandleFunc("/machine-api/firmware-checksum", firmware_handler.Firmware_checksum)
 
 	///////////////////////
 	// admin page routes //

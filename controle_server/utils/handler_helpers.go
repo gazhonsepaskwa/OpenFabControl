@@ -8,15 +8,15 @@ import (
 
 // return the error as a json in the folowing format : { "err" : [error msg] }
 func Respond_error(w http.ResponseWriter, msg string, status_code int) {
-	w.WriteHeader(status_code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status_code)
 	json.NewEncoder(w).Encode(map[string]any{"error": msg})
 }
 
 // return the success as a json, necesary key pair: "msg" : "..."
 func Respond_json(w http.ResponseWriter, json_map map[string]any, status_code int) {
-	w.WriteHeader(status_code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status_code)
 	json.NewEncoder(w).Encode(json_map)
 }
 

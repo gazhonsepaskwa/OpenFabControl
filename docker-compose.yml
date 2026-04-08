@@ -13,6 +13,9 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       JWT_TOKEN: ${JWT_TOKEN:-dev-token}
       CONTROLE_SERVER_PORT: ${CONTROLE_SERVER_PORT:-3000}
+      FIRMWARE_FOLDER_PATH: ${FIRMWARE_FOLDER_PATH}
+    volumes:
+      - ${FIRMWARE_FOLDER_PATH}:${FIRMWARE_FOLDER_PATH}:ro
     depends_on:
       postgres:
         condition: service_healthy
