@@ -22,6 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { apiFetch } from '../api';
 
 const API_BASE = '/web-admin-api';
 
@@ -42,7 +43,7 @@ function RolesPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/get_role_list`);
+      const res = await apiFetch(`${API_BASE}/get_role_list`);
 
       if (!res.ok) {
         throw new Error('Failed to fetch roles');
@@ -77,7 +78,7 @@ function RolesPanel() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/create_role`, {
+      const res = await apiFetch(`${API_BASE}/create_role`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role_name: newRoleName }),
@@ -107,7 +108,7 @@ function RolesPanel() {
 
   const handleConfirmDelete = async () => {
     try {
-      const res = await fetch(`${API_BASE}/delete_role`, {
+      const res = await apiFetch(`${API_BASE}/delete_role`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role_name: deleteConfirmDialog.roleName }),
