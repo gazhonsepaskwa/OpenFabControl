@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ADMIN_ROLE_ID, isAdmin } from './common';
 import BookingPanel from './components/BookingPanel';
 import ConfirmEmailPage from './components/ConfirmEmailPage';
 import DevicesPanel from './components/DevicesPanel';
@@ -30,8 +31,6 @@ import RolesPanel from './components/RolesPanel';
 import SettingsPanel from './components/SettingsPanel';
 import SubscriptionsPanel from './components/SubscriptionsPanel';
 import UsersPanel from './components/UsersPanel';
-
-const ADMIN_ROLE_ID = 1;
 
 const NAV_ITEMS = [
   { label: 'Users', index: 0, icon: PeopleIcon },
@@ -113,8 +112,7 @@ function App() {
     const roles: { id: number }[] = Array.isArray(user?.roles) ? user.roles : [];
     const tabs = getAccessibleTabs(roles);
     setAccessibleTabs(tabs);
-    const hasAdminRole = roles.some((r) => r.id === ADMIN_ROLE_ID);
-    setTabValue(hasAdminRole ? 0 : 4);
+    setTabValue(isAdmin() ? 0 : 4);
     setIsLoggedIn(true);
   };
 

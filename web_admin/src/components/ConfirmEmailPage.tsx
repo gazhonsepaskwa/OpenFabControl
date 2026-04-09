@@ -1,7 +1,6 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { Alert, Avatar, Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
-
 interface ConfirmEmailPageProps {
   /** The activation code extracted from the ?code= query parameter. */
   activationCode: string;

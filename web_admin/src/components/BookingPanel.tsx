@@ -20,36 +20,10 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch, getCurrentUserId, isAdmin } from '../common';
+import type { Resource, Session, User } from '../types';
 
-const ADMIN_ROLE_ID = 1;
-
-interface Session {
-  id: number;
-  user_id: number;
-  resource_uuid: string;
-  started_at: string;
-  ended_at: string;
-  time_used: number;
-  status: string;
-}
-
-interface Resource {
-  id: number;
-  uuid: string;
-  name: string;
-  type: string;
-  zone: string;
-}
-
-interface UserItem {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-}
-
-interface CreateForm {
+interface BookingForm {
   resource_uuid: string;
   started_at: string;
   ended_at: string;
@@ -60,24 +34,6 @@ interface SnackbarState {
   open: boolean;
   message: string;
   severity: 'success' | 'error';
-}
-
-function getIsAdmin(): boolean {
-  try {
-    const user = JSON.parse(sessionStorage.getItem('user') ?? 'null');
-    return Array.isArray(user?.roles) && user.roles.some((r: { id: number }) => r.id === ADMIN_ROLE_ID);
-  } catch {
-    return false;
-  }
-}
-
-function getCurrentUserId(): number | null {
-  try {
-    const user = JSON.parse(sessionStorage.getItem('user') ?? 'null');
-    return typeof user?.id === 'number' ? user.id : null;
-  } catch {
-    return null;
-  }
 }
 
 function statusColor(status: string): string {
@@ -94,43 +50,43 @@ function statusColor(status: string): string {
 }
 
 export default function BookingPanel() {
-  const isAdmin = getIsAdmin();
+  const userIsAdmin = isAdmin();
 
   const [resources, setResources] = useState<Resource[]>([]);
-  const [users, setUsers] = useState<UserItem[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<number | null>(null);
-  const [form, setForm] = useState<CreateForm>({ resource_uuid: '', started_at: '', ended_at: '', user_id: '' });
+  const [form, setForm] = useState<BookingForm>({ resource_uuid: '', started_at: '', ended_at: '', user_id: '' });
   const [submitting, setSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' });
   const calendarRef = useRef<FullCalendar>(null);
 
   /* Fetch approved resources once (admin only – used for dropdown + event titles) */
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!userIsAdmin) return;
     apiFetch('/web-admin-api/get_resource_list_approved')
       .then((r) => r.json())
       .then((data: Resource[]) => setResources(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }, [isAdmin]);
+  }, [userIsAdmin]);
 
   /* Fetch all users once (admin only – used for user select) */
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!userIsAdmin) return;
     apiFetch('/web-admin-api/get_user_list')
       .then((r) => r.json())
-      .then((data: UserItem[]) => setUsers(Array.isArray(data) ? data : []))
+      .then((data: User[]) => setUsers(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }, [isAdmin]);
+  }, [userIsAdmin]);
 
   /* Build a human-readable event title from a session */
   const getTitle = useCallback(
     (session: Session): string => {
       const resource = resources.find((r) => r.uuid === session.resource_uuid);
       const resourceLabel = resource?.name ?? `${session.resource_uuid.slice(0, 8)}…`;
-      return isAdmin ? `${resourceLabel} · #${session.user_id}` : resourceLabel;
+      return userIsAdmin ? `${resourceLabel} · #${session.user_id}` : resourceLabel;
     },
-    [isAdmin, resources]
+    [userIsAdmin, resources]
   );
 
   /* FullCalendar event-source function – called on every view/navigation change */
@@ -140,7 +96,7 @@ export default function BookingPanel() {
       successCallback: (events: EventInput[]) => void,
       failureCallback: (error: Error) => void
     ) => {
-      const endpoint = isAdmin ? '/web-admin-api/fetch_booking' : '/web-user-api/fetch_my_booking';
+      const endpoint = userIsAdmin ? '/web-admin-api/fetch_booking' : '/web-user-api/fetch_my_booking';
       apiFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -165,7 +121,7 @@ export default function BookingPanel() {
         })
         .catch(failureCallback);
     },
-    [isAdmin, getTitle]
+    [userIsAdmin, getTitle]
   );
 
   /* Open "New Booking" dialog pre-filled with the clicked date */
@@ -210,7 +166,7 @@ export default function BookingPanel() {
       setSnackbar({ open: true, message: 'All fields are required.', severity: 'error' });
       return;
     }
-    if (isAdmin && !form.user_id) {
+    if (userIsAdmin && !form.user_id) {
       setSnackbar({ open: true, message: 'User is required.', severity: 'error' });
       return;
     }
@@ -219,10 +175,10 @@ export default function BookingPanel() {
 
     const isEditing = editingSessionId !== null;
     const endpoint = isEditing
-      ? isAdmin
+      ? userIsAdmin
         ? '/web-admin-api/update_session'
         : '/web-user-api/update_session'
-      : isAdmin
+      : userIsAdmin
         ? '/web-admin-api/create_session'
         : '/web-user-api/create_session';
 
@@ -231,7 +187,7 @@ export default function BookingPanel() {
       resource_uuid: form.resource_uuid,
       started_at: new Date(form.started_at).toISOString(),
       ended_at: new Date(form.ended_at).toISOString(),
-      ...(isAdmin && { user_id: parseInt(form.user_id, 10) }),
+      ...(userIsAdmin && { user_id: parseInt(form.user_id, 10) }),
     };
 
     try {
@@ -286,7 +242,7 @@ export default function BookingPanel() {
         <DialogTitle>{editingSessionId !== null ? 'Edit Booking' : 'New Booking'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            {isAdmin && (
+            {userIsAdmin && (
               <FormControl fullWidth required>
                 <InputLabel>User</InputLabel>
                 <Select

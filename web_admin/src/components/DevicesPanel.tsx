@@ -29,28 +29,19 @@ import {
   Typography,
 } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch } from '../common';
+import type { Resource } from '../types';
 
 const API_BASE = '/web-admin-api';
 
-interface Device {
-  approved: boolean;
-  name: string;
-  type: string;
-  zone: string;
-  uuid: string;
-  price_booking_in_eur?: number;
-  price_usage_in_eur?: number;
-}
+type ViewMode = 'grid' | 'stack';
 
 interface DeviceCardProps {
-  device: Device;
+  device: Resource;
   onApprove: (uuid: string) => void;
   onUnapprove: (uuid: string) => void;
   viewMode: ViewMode;
 }
-
-type ViewMode = 'grid' | 'stack';
 
 const DEVICE_TYPE_ICONS: Record<string, SvgIconComponent> = {
   'fm-bv2': PrecisionManufacturingIcon,
@@ -112,8 +103,8 @@ function DeviceCard({ device, onApprove, onUnapprove, viewMode }: DeviceCardProp
 
 function DevicesPanel() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [notApprovedDevices, setNotApprovedDevices] = useState<Device[]>([]);
-  const [approvedDevices, setApprovedDevices] = useState<Device[]>([]);
+  const [notApprovedDevices, setNotApprovedDevices] = useState<Resource[]>([]);
+  const [approvedDevices, setApprovedDevices] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
