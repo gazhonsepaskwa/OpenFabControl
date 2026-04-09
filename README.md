@@ -1,5 +1,7 @@
 # Open Fab Control - Open-Source FabLab Management
 
+## Project Status : Beta testing
+
 ## Welcome!
 
 Open Fab Control is an open-source project dedicated to creating a flexible and accessible alternative to existing FabLab management systems. We aim to provide a powerful platform for managing equipment, members, bookings, projects, and more, all while remaining transparent and community-driven.
