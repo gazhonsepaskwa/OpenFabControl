@@ -65,7 +65,7 @@ function getConfirmEmailCode(): string | null {
 function App() {
   const confirmEmailCode = getConfirmEmailCode();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!sessionStorage.getItem('token'));
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(4);
   const [accessibleTabs, setAccessibleTabs] = useState<number[]>(() => {
     const userStr = sessionStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;

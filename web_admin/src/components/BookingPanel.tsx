@@ -63,12 +63,11 @@ export default function BookingPanel() {
 
   /* Fetch approved resources once (admin only – used for dropdown + event titles) */
   useEffect(() => {
-    if (!userIsAdmin) return;
     apiFetch('/web-admin-api/get_resource_list_approved')
       .then((r) => r.json())
       .then((data: Resource[]) => setResources(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }, [userIsAdmin]);
+  }, []);
 
   /* Fetch all users once (admin only – used for user select) */
   useEffect(() => {
