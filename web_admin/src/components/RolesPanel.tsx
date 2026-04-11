@@ -22,13 +22,10 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch } from '../common';
+import type { Role } from '../types';
 
 const API_BASE = '/web-admin-api';
-
-interface Role {
-  name: string;
-}
 
 function RolesPanel() {
   const [roles, setRoles] = useState<Role[]>([]);

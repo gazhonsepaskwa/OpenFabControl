@@ -30,28 +30,10 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch } from '../common';
+import type { Role, User } from '../types';
 
 const API_BASE = '/web-admin-api';
-
-interface User {
-  id: string;
-  email: string;
-  access_key: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  tva: string;
-  facturation_address: string;
-  facturation_account: string;
-  status: string;
-  created_at: string;
-}
-
-interface Role {
-  id: number;
-  name: string;
-}
 
 function UsersPanel() {
   const [users, setUsers] = useState<User[]>([]);
@@ -99,7 +81,7 @@ function UsersPanel() {
   const handleOpenCreateDialog = () => {
     setIsEditMode(false);
     setEditingUser({
-      id: '',
+      id: 0,
       email: '',
       access_key: '',
       password: '',
@@ -421,10 +403,10 @@ function UsersPanel() {
                     <IconButton size="small" onClick={() => handleOpenEditDialog(user)} color="primary">
                       <EditIcon />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleOpenRolesDialog(user.id)} color="info">
+                    <IconButton size="small" onClick={() => handleOpenRolesDialog(String(user.id))} color="info">
                       <SecurityIcon />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleDeleteUserClick(user.id)} color="error">
+                    <IconButton size="small" onClick={() => handleDeleteUserClick(String(user.id))} color="error">
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>

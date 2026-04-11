@@ -1,27 +1,8 @@
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Alert, Avatar, Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
-import { getBaseUrl } from '../api';
-
-interface Role {
-  id: number;
-  name: string;
-  created_at: string;
-}
-
-interface User {
-  id: number;
-  email: string;
-  access_key: string;
-  first_name: string;
-  last_name: string;
-  tva: string;
-  facturation_address: string;
-  facturation_account: string;
-  status: string;
-  created_at: string;
-  roles: Role[];
-}
+import { getBaseUrl } from '../common';
+import type { User } from '../types';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;

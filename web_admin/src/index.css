@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+.fc-event {
+  cursor: pointer;
+}
+
 body {
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   -webkit-font-smoothing: antialiased;

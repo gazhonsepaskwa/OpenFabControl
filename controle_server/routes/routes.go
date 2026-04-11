@@ -46,6 +46,7 @@ func Setup_routes() {
 	http.HandleFunc("/web-admin-api/edit_resource", admin_middleware(resource_handler.Edit_resource))
 
 	http.HandleFunc("/web-admin-api/create_session", admin_middleware(session_handler.Create_session))
+	http.HandleFunc("/web-admin-api/update_session", admin_middleware(session_handler.Update_session))
 	http.HandleFunc("/web-admin-api/fetch_booking", admin_middleware(session_handler.Fetch_booking))
 
 	// users
@@ -69,6 +70,7 @@ func Setup_routes() {
 
 	http.HandleFunc("/web-user-api/user_one_time_setup", user_handler.User_one_time_setup)
 	http.HandleFunc("/web-user-api/create_session", auth_middleware(session_handler.Create_session))
+	http.HandleFunc("/web-user-api/update_session", auth_middleware(session_handler.Update_session))
 	http.HandleFunc("/web-user-api/fetch_booking", auth_middleware(session_handler.Fetch_booking))
 	http.HandleFunc("/web-user-api/fetch_my_booking", auth_middleware(session_handler.Fetch_my_booking))
 	http.HandleFunc("/web-user-api/login", user_handler.Login)
