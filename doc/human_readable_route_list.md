@@ -730,6 +730,20 @@ Login with credentials.
 
 ---
 
+### GET /web-user-api/get_resource_list
+Lists approved machines.
+
+**Input:** none (GET)
+
+**Outputs:**
+| Code | Body                                  |
+|------|----------------------------------------|
+| 200  | `[{id,uuid,type,zone,name,...},...]`   |
+| 405  | `{"error":"Method not allowed"}`       |
+| 500  | `{"error":"internal server error"}`    |
+
+---
+
 ## TODO (routes to implement)
 
 ### Users

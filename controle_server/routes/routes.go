@@ -73,6 +73,7 @@ func Setup_routes() {
 	http.HandleFunc("/web-user-api/update_session", auth_middleware(session_handler.Update_session))
 	http.HandleFunc("/web-user-api/fetch_booking", auth_middleware(session_handler.Fetch_booking))
 	http.HandleFunc("/web-user-api/fetch_my_booking", auth_middleware(session_handler.Fetch_my_booking))
+	http.HandleFunc("/web-user-api/get_resource_list", auth_middleware(resource_handler.Get_resource_list_approved))
 	http.HandleFunc("/web-user-api/login", user_handler.Login)
 
 	///////////
