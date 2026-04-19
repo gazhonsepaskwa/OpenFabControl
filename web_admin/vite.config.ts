@@ -16,6 +16,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/web-user-api': {
+          target: proxyTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+        '/machine-api': {
+          target: proxyTarget,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
   };

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Route to create a session (admin: user_id, resource: access_key, user: user_id)
+// Route to create a session (admin: user_id, resource: access_key, user: JWT context)
 func Create_session(w http.ResponseWriter, r *http.Request) {
 
 	if utils.Reject_all_methode_exept(r, w, http.MethodPost) != nil {
@@ -35,7 +35,7 @@ func Create_session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Resolve user_id from user_id or access_key
+	// Resolve user_id from payload user_id, access_key, or authenticated JWT context
 	var userID int
 	if payload.UserID != nil {
 		userID = *payload.UserID
@@ -49,6 +49,9 @@ func Create_session(w http.ResponseWriter, r *http.Request) {
 			utils.Respond_error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+	} else if id, ok := r.Context().Value("user_id").(int); ok && id != 0 {
+		// Authenticated user route: use the user_id from the validated JWT token
+		userID = id
 	} else {
 		utils.Respond_error(w, "user_id or access_key is required", http.StatusBadRequest)
 		return

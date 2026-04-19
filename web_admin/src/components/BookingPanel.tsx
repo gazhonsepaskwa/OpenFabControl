@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  GlobalStyles,
   InputLabel,
   MenuItem,
   Select,
@@ -61,13 +62,14 @@ export default function BookingPanel() {
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' });
   const calendarRef = useRef<FullCalendar>(null);
 
-  /* Fetch approved resources once (admin only – used for dropdown + event titles) */
+  /* Fetch resources once */
   useEffect(() => {
-    apiFetch('/web-admin-api/get_resource_list_approved')
+    const endpoint = userIsAdmin ? '/web-admin-api/get_resource_list_approved' : '/web-user-api/get_resource_list';
+    apiFetch(endpoint)
       .then((r) => r.json())
       .then((data: Resource[]) => setResources(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }, []);
+  }, [userIsAdmin]);
 
   /* Fetch all users once (admin only – used for user select) */
   useEffect(() => {
@@ -123,9 +125,15 @@ export default function BookingPanel() {
     [userIsAdmin, getTitle]
   );
 
+  /* Today's date as YYYY-MM-DD (recomputed once per render, stable enough) */
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   /* Open "New Booking" dialog pre-filled with the clicked date */
   const handleDateClick = useCallback(
     (info: DateClickArg) => {
+      // Non-admin users must not book in the past
+      if (!userIsAdmin && info.dateStr < todayStr) return;
+
       const d = info.dateStr; // YYYY-MM-DD
       const currentUserId = getCurrentUserId();
       setEditingSessionId(null);
@@ -137,7 +145,7 @@ export default function BookingPanel() {
       });
       setDialogOpen(true);
     },
-    [resources]
+    [resources, userIsAdmin, todayStr]
   );
 
   /* Open dialog pre-filled with an existing session's data for editing */
@@ -216,7 +224,20 @@ export default function BookingPanel() {
     }
   };
 
+  const handleStartDateChange = (newStart: string) => {
+    const endDate = newStart ? new Date(new Date(newStart).getTime() + 60 * 60 * 1000) : null;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const newEnd = endDate
+      ? `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`
+      : '';
+    setForm((f) => ({ ...f, started_at: newStart, ended_at: newEnd }));
+  };
+
   const closeSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
+
+  /* True when a non-admin is editing a booking whose start is in the past */
+  const isPastBooking =
+    !userIsAdmin && editingSessionId !== null && !!form.started_at && new Date(form.started_at) < new Date();
 
   return (
     <Box sx={{ p: 3 }}>
@@ -224,6 +245,15 @@ export default function BookingPanel() {
         Booking
       </Typography>
 
+      {!userIsAdmin && (
+        <GlobalStyles
+          styles={{
+            '.fc-day-past': { backgroundColor: 'rgba(0,0,0,0.04)', cursor: 'default' },
+            '.fc-day-past .fc-daygrid-day-number': { color: 'rgba(0,0,0,0.38)', pointerEvents: 'none' },
+            '.fc-day-past .fc-daygrid-event': { opacity: 0.45 },
+          }}
+        />
+      )}
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, interactionPlugin]}
@@ -287,7 +317,7 @@ export default function BookingPanel() {
               label="Start"
               type="datetime-local"
               value={form.started_at}
-              onChange={(e) => setForm((f) => ({ ...f, started_at: e.target.value }))}
+              onChange={(e) => handleStartDateChange(e.target.value)}
               fullWidth
               slotProps={{ inputLabel: { shrink: true } }}
             />
@@ -303,7 +333,7 @@ export default function BookingPanel() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={submitting}>
+          <Button onClick={handleSubmit} variant="contained" disabled={submitting || isPastBooking}>
             {submitting
               ? editingSessionId !== null
                 ? 'Saving…'
