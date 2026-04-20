@@ -2,11 +2,13 @@
 #include <Wire.h>                   // I2C
 #include <Adafruit_MCP23X17.h>      // IO Expenders
 #include "Electroniccats_PN7150.h"  // NFC
+#include <Adafruit_GFX.h>           // screen
+#include <Adafruit_ILI9341.h>       // screen
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 
 #include "pins.h"
-#include "demo.h"
 
 // component objects declaration
 Adafruit_MCP23X17       mcp1;
@@ -14,14 +16,25 @@ Adafruit_MCP23X17       mcp2;
 Adafruit_ILI9341        tft(TFT_CS, TFT_DC, TFT_RST); // default VSPI bus
 Electroniccats_PN7150   nfc(NFC_IRQ, -1, NFC_ADDR, PN7150); // VIN -> -1 since managed externally
 
-//other
-Menu menu = INIT;
-QRCodeGFX qr(tft);
+void printTFT(char* text, int16_t x, int16_t y, uint16_t color, uint8_t size) {
+    tft.setTextColor(color);
+    tft.setTextSize(size);
+    tft.setCursor(x, y);
+    tft.print(text);
+}
+
+void draw_title(char* msg) {
+    printTFT(msg, 5, 3, tft.color565(255, 255, 255), 2);
+}
+
+void clear_screen(Adafruit_ILI9341& tft) {
+    tft.fillScreen(ILI9341_BLACK);
+}
 
 void setup() {
     Serial.begin(115200);
     Serial.println("╔══════════════════════════════╗");
-    Serial.println("║ Program : OFC_controler demo ║");
+    Serial.println("║ Program : scan card          ║");
     Serial.println("║ Version : 1.0                ║");
     Serial.println("╚══════════════════════════════╝");
     Serial.println("");
@@ -46,22 +59,6 @@ void setup() {
     }
     Serial.println("OK");
 
-    // Buttons init
-    Serial.print("Button init...   ");
-    mcp2.pinMode(BTN_L, INPUT);
-    mcp2.pinMode(BTN_R, INPUT);
-    Serial.println("OK");
-
-    // LED
-    Serial.print("LED init...      ");
-    pinMode(LED, OUTPUT);
-    Serial.println("OK");
-
-    // Buzzer
-    Serial.print("Buzzer init...   ");
-    mcp1.pinMode(BUZZER, OUTPUT);
-    Serial.println("OK");
-
     // Screen init
     Serial.print("TFT init...      ");
     mcp1.pinMode(TFT_BL, OUTPUT);
@@ -71,7 +68,6 @@ void setup() {
     tft.setRotation(3);
     tft.fillScreen(ILI9341_BLACK); // clear
     Serial.println("OK");
-    select_menu(tft, qr, menu, EVENT_ANY);
 
     // NFC init
     Serial.print("NFC init...      ");
@@ -101,36 +97,43 @@ void setup() {
 }
 
 void loop() {
-    bool btnL_state = mcp2.digitalRead(BTN_L);
-    bool btnR_state = mcp2.digitalRead(BTN_R);
-
-    // LEFT BTN EVENT
-    if (btnL_state == LOW) {
-        // wait the button to be released
-        while (btnL_state == LOW) {
-            btnL_state = mcp2.digitalRead(BTN_L);
-        }
-        select_menu(tft, qr, menu, EVENT_BTN_LEFT);
-    }
-
-    // RIGHT BTN EVENT
-    else if (btnR_state == LOW) {
-        // wait the button to be released
-        while (btnR_state == LOW) {
-            btnR_state = mcp2.digitalRead(BTN_R);
-        }
-        select_menu(tft, qr, menu, EVENT_BTN_RIGHT);
-    }
-
     // CARD EVENT
-    else if (nfc.isTagDetected(20)) {
+    if (nfc.isTagDetected(20)) {
         if (nfc.remoteDevice.hasMoreTags()) {
-            Serial.println("todo: error msg for only one tag at the time");
+            Serial.println("Error: Only one tag at a time supported.");
+            delay(500);
+            return;
         }
-        Serial.println("todo : msg remove card");
-        nfc.waitForTagRemoval();
-        // to do : get the card info
-        select_menu(tft, qr, menu, EVENT_CARD);
+
+        const unsigned char* uid = nfc.remoteDevice.getNFCID();
+        unsigned char uid_len = nfc.remoteDevice.getNFCIDLen();
+
+        if (uid && uid_len > 0 && uid_len <= 15) {
+            // Allocate buffer for UID string (each byte = 2 hex chars + null terminator)
+            char key[32]; // Max 15 bytes * 2 chars + 1 null = 31 chars + null
+            for (unsigned char i = 0; i < uid_len; i++) {
+                snprintf(&key[i * 2], 3, "%02X", uid[i]); // 3 = max chars to write (including null)
+            }
+            key[uid_len * 2] = '\0'; // Ensure null termination
+
+            // Display UID on screen
+            clear_screen(tft);
+            draw_title(key);
+            Serial.println(key);
+
+            // Wait until tag is removed
+            nfc.waitForTagRemoval();
+
+            // Clear screen after removal
+            clear_screen(tft);
+        } else {
+            Serial.println("Invalid UID.");
+        }
+    } else {
+        delay(500);
     }
-    nfc.reset();
+
+    nfc.reset(); // Not necessary here
 }
+
+
