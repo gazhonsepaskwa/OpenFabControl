@@ -62,6 +62,7 @@ void OFC_Ui::draw_scan_card() {
         // Machine booked now, waiting to be unlocked
         draw_center_background(255, 165, 0);  // orange
         draw_button_left("Manual");
+        draw_button_right("Update");
 
         char booked_line[48];
         const char* user = (_next_booking->user_name[0] ? _next_booking->user_name : "?");
@@ -75,6 +76,7 @@ void OFC_Ui::draw_scan_card() {
         // Machine free
         draw_center_background(100, 255, 100);
         draw_button_left("Manual");
+        draw_button_right("Update");
 
         if (has_booking_today && time_range[0]) {
             printTFTcentered("FREE | Next:", _tft->color565(0, 0, 0), 2, 0, 23, 320, 30);

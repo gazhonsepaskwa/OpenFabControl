@@ -59,6 +59,10 @@ class Api {
         // Returns true when approved. If out_http_code is provided, it will contain the last HTTP status code.
         bool is_approved_by_admin(int* out_http_code = nullptr);
 
+        // OTA / firmware update endpoints
+        bool get_last_firmware_version(char* out_version, size_t out_size, char* err_msg, size_t err_size);
+        bool get_firmware_checksum_sha256(char* out_sha256_hex, size_t out_size, char* err_msg, size_t err_size);
+
         // Session-related endpoints (migrated from firmware/sessions.ino)
         bool create_session(const char* access_key, int duration_minutes, Session* out, char* err_msg, size_t err_size);
         bool start_session(const char* access_key, Session* out, char* err_msg, size_t err_size);

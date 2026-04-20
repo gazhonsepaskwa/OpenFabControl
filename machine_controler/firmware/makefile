@@ -1,3 +1,15 @@
+#
+# Firmware publish config (for OTA server folder)
+#
+# Usage:
+#   make distant_update FIRMWARE_PUBLISH_DIR=/path/to/firmware_folder
+#
+FIRMWARE_PUBLISH_DIR := /Users/nalebrun/docker-volume/ofc/firmware
+FIRMWARE_BUILD_BIN := ./build/firmware.ino.bin
+FIRMWARE_OUT_BIN := $(FIRMWARE_PUBLISH_DIR)/firmware.bin
+FIRMWARE_OUT_VERSION := $(FIRMWARE_PUBLISH_DIR)/firmware.version
+FIRMWARE_VERSION_HEADER := ./libraries/OFC_Firmware/src/OFC_Firmware.h
+
 compile:
 	 mkdir -p ./build
 	./bin/arduino-cli compile --libraries ./libraries --fqbn esp32:esp32:esp32 . --build-path ./build
@@ -97,3 +109,28 @@ install_lib:
 	./bin/arduino-cli lib install "ArduinoJson"
 
 setup: install_arduinocli_linux install_lib
+
+distant_update: compile
+	@set -e; \
+	if [ -z "$(FIRMWARE_PUBLISH_DIR)" ]; then \
+		echo "ERROR: FIRMWARE_PUBLISH_DIR is not set"; \
+		echo "Usage: make distant_update FIRMWARE_PUBLISH_DIR=/path/to/firmware_folder"; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(FIRMWARE_BUILD_BIN)" ]; then \
+		echo "ERROR: missing build output: $(FIRMWARE_BUILD_BIN)"; \
+		exit 1; \
+	fi; \
+	mkdir -p "$(FIRMWARE_PUBLISH_DIR)"; \
+	cp "$(FIRMWARE_BUILD_BIN)" "$(FIRMWARE_OUT_BIN)"; \
+	version=$$(awk -F'"' '/OFC_FIRMWARE_VERSION[[:space:]]*=/ {print $$2; exit}' "$(FIRMWARE_VERSION_HEADER)"); \
+	if [ -z "$$version" ]; then \
+		echo "ERROR: could not extract OFC_FIRMWARE_VERSION from $(FIRMWARE_VERSION_HEADER)"; \
+		exit 1; \
+	fi; \
+	tmp="$(FIRMWARE_OUT_VERSION).tmp"; \
+	printf '{ \"version\":\"%s\" }\n' "$$version" > "$$tmp"; \
+	mv "$$tmp" "$(FIRMWARE_OUT_VERSION)"; \
+	echo "Published:"; \
+	echo "  - $(FIRMWARE_OUT_BIN)"; \
+	echo "  - $(FIRMWARE_OUT_VERSION) (version=$$version)"

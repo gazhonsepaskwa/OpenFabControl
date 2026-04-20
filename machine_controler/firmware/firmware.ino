@@ -13,6 +13,8 @@
 #include <OFC_Network.h>
 #include <OFC_Ui.h>
 
+#include <OFC_Firmware.h>
+
 OFC_Hardware g_hardware; // Hardware Lib
 OFC_Network  g_network;  // Network Lib
 OFC_Ui       g_ui;       // Ui Lib
@@ -35,7 +37,7 @@ void setup() {
     Serial.begin(115200);
     Serial.println("╔══════════════════════════════════════════╗");
     Serial.println("║ Program : OFC machine_controler firmware ║");
-    Serial.println("║ Version : v beta 1.0                     ║");
+    Serial.printf ("║ Version : %-28s ║\n", OFC_FIRMWARE_VERSION);
     Serial.println("╚══════════════════════════════════════════╝");
     Serial.println("");
 
@@ -84,19 +86,13 @@ void setup() {
         int http_code = 0;
         bool approved = (g_network.api && g_network.api->is_approved_by_admin(&http_code));
         if (approved) break;
-
-        if (http_code == 404) {
-            Serial.println("KO: machine not found");
-            g_ui.clear_screen();
-            g_ui.waiting_approval();
-            while (true) {
-                if (g_hardware.mcp2.digitalRead(BTN_L) == LOW || g_hardware.mcp2.digitalRead(BTN_R) == LOW) {
-                    g_preferences.clear();
-                    ESP.restart();
-                }
-                delay(100);
-            }
+        
+        // check if the user want to reset the esp
+        if (g_hardware.getButtonRightState() == LOW) {
+            g_preferences.clear();
+            ESP.restart();
         }
+
         if (first_time) {
             first_time = false;
             g_ui.clear_screen();
