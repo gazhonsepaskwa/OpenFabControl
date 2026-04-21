@@ -38,7 +38,12 @@ func Create_session(w http.ResponseWriter, r *http.Request) {
 	// Resolve user_id from payload user_id, access_key, or authenticated JWT context
 	var userID int
 	if payload.UserID != nil {
-		userID = *payload.UserID
+		if admin, ok := r.Context().Value("is_admin").(bool); ok && admin == true {
+			userID = *payload.UserID
+		} else {
+			utils.Respond_error(w, "Only admin can specify user_id", http.StatusNotFound)
+			return
+		}
 	} else if payload.AccessKey != nil && *payload.AccessKey != "" {
 		err := database.Self.QueryRow("SELECT id FROM users WHERE access_key = $1", *payload.AccessKey).Scan(&userID)
 		if err == sql.ErrNoRows {

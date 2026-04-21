@@ -45,9 +45,11 @@ func Setup_routes() {
 	http.HandleFunc("/web-admin-api/delete_resource", admin_middleware(resource_handler.Delete_resource))
 	http.HandleFunc("/web-admin-api/edit_resource", admin_middleware(resource_handler.Edit_resource))
 
+	// sessions
 	http.HandleFunc("/web-admin-api/create_session", admin_middleware(session_handler.Create_session))
 	http.HandleFunc("/web-admin-api/update_session", admin_middleware(session_handler.Update_session))
 	http.HandleFunc("/web-admin-api/fetch_booking", admin_middleware(session_handler.Fetch_booking))
+	http.HandleFunc("/web-admin-api/delete_session", admin_middleware(session_handler.Delete_session))
 
 	// users
 	http.HandleFunc("/web-admin-api/create_user", admin_middleware(user_handler.Create_user))
@@ -74,6 +76,7 @@ func Setup_routes() {
 	http.HandleFunc("/web-user-api/fetch_booking", auth_middleware(session_handler.Fetch_booking))
 	http.HandleFunc("/web-user-api/fetch_my_booking", auth_middleware(session_handler.Fetch_my_booking))
 	http.HandleFunc("/web-user-api/get_resource_list", auth_middleware(resource_handler.Get_resource_list_approved))
+	http.HandleFunc("/web-user-api/delete_session", auth_middleware(session_handler.Delete_session))
 	http.HandleFunc("/web-user-api/login", user_handler.Login)
 
 	///////////

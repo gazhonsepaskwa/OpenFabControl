@@ -1,0 +1,2 @@
+TOKEN="${USER_TOKEN:-<admin_token>}"
+curl -k -X DELETE -H "Authorization: Bearer $TOKEN" -d '{"session_id":5}' https://localhost:4080/web-user-api/delete_session

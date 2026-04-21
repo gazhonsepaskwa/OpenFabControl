@@ -44,6 +44,7 @@ func auth_middleware(next http.HandlerFunc) http.HandlerFunc {
 		// Add user info to request context
 		ctx := context.WithValue(r.Context(), "user_id", claims.USERID)
 		ctx = context.WithValue(ctx, "username", claims.EMAIL)
+		ctx = context.WithValue(ctx, "is_admin", false)
 
 		next(w, r.WithContext(ctx))
 	}
@@ -77,7 +78,13 @@ func require_role(roleName string) func(http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 
-			next(w, r)
+			// add role to context
+			ctx := context.WithValue(r.Context(), "is_admin", false)
+			if (roleName == "admin") {
+				ctx = context.WithValue(ctx, "is_admin", true)
+			}
+
+			next(w, r.WithContext(ctx))
 		}
 	}
 }
