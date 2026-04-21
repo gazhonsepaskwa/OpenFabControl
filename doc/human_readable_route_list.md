@@ -362,6 +362,25 @@ Deletes a machine controller.
 
 ---
 
+### DELETE /web-admin-api/delete_session
+Deletes a session.
+
+**Input (JSON):**
+| Parameter  | Type   | Required |
+|------------|--------|----------|
+| session_id | int    | yes      |
+
+**Outputs:**
+| Code | Body                                                     |
+|------|----------------------------------------------------------|
+| 200  | `{"msg":"Session deleted successfully"}`                 |
+| 400  | `{"error":"invalid payload: session_id cannot be empty"}` |
+| 404  | `{"error":"The session you tried to delete does not exist"}` |
+| 405  | `{"error":"Method not allowed"}`                         |
+| 500  | `{"error":"Internal Server Error"}`                      |
+
+---
+
 ### POST /web-admin-api/edit_resource
 Edits a machine controller.
 
@@ -741,6 +760,26 @@ Lists approved machines.
 | 200  | `[{id,uuid,type,zone,name,...},...]`   |
 | 405  | `{"error":"Method not allowed"}`       |
 | 500  | `{"error":"internal server error"}`    |
+
+---
+
+### DELETE /web-user-api/delete_session
+Deletes a session.
+
+**Input (JSON):**
+| Parameter  | Type   | Required |
+|------------|--------|----------|
+| session_id | int    | yes      |
+
+**Outputs:**
+| Code | Body                                                     |
+|------|----------------------------------------------------------|
+| 200  | `{"msg":"Session deleted successfully"}`                 |
+| 400  | `{"error":"invalid payload: session_id cannot be empty"}` |
+| 404  | `{"error":"The session you tried to delete does not exist"}` |
+| 404  | `{"error":"The session you tried to delete does not belong to you"}` |
+| 405  | `{"error":"Method not allowed"}`                         |
+| 500  | `{"error":"Internal Server Error"}`                      |
 
 ---
 
