@@ -1,7 +1,8 @@
 import { EventClickArg, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
+import AddIcon from '@mui/icons-material/Add';
 import {
   Alert,
   Autocomplete,
@@ -161,13 +162,11 @@ export default function BookingPanel() {
   /* Today's date as YYYY-MM-DD (recomputed once per render, stable enough) */
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  /* Open "New Booking" dialog pre-filled with the clicked date */
-  const handleDateClick = useCallback(
-    (info: DateClickArg) => {
-      // Non-admin users must not book in the past
-      if (!userIsAdmin && info.dateStr < todayStr) return;
-
-      const d = info.dateStr; // YYYY-MM-DD
+  /* Open "New Booking" dialog, optionally pre-filled with a specific date */
+  const openNewBookingDialog = useCallback(
+    (dateStr?: string) => {
+      if (dateStr && !userIsAdmin && dateStr < todayStr) return;
+      const d = dateStr ?? new Date().toISOString().slice(0, 10);
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
       const startHour = (now.getHours() + 1) % 24;
@@ -304,9 +303,27 @@ export default function BookingPanel() {
 
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Booking
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h4" component="h1">
+          Booking
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => openNewBookingDialog()}
+          sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+        >
+          Book device
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => openNewBookingDialog()}
+          sx={{ display: { xs: 'inline-flex', sm: 'none' }, minWidth: 0, px: 1 }}
+          aria-label="Book device"
+        >
+          <AddIcon />
+        </Button>
+      </Box>
 
       {!userIsAdmin && (
         <GlobalStyles
@@ -323,7 +340,7 @@ export default function BookingPanel() {
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           events={fetchEvents}
-          dateClick={handleDateClick}
+          dateClick={(info) => openNewBookingDialog(info.dateStr)}
           eventClick={handleEventClick}
           eventDidMount={(info) => {
             info.el.title = info.event.title;
