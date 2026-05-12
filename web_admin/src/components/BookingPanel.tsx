@@ -328,9 +328,9 @@ export default function BookingPanel() {
           eventDidMount={(info) => {
             info.el.title = info.event.title;
           }}
-          headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
+          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridDay,dayGridMonth' }}
           height="100%"
-          buttonText={{ today: 'Today' }}
+          buttonText={{ today: 'Today', dayGridDay: 'Day', dayGridMonth: 'Month' }}
         />
       </Box>
 
