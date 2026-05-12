@@ -441,7 +441,7 @@ function UsersPanel() {
               </TableHead>
               <TableBody>
                 {paginatedUsers.map((user) => (
-                  <TableRow key={user.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableRow key={user.id} hover onClick={() => handleOpenEditDialog(user)} sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell>{user.id}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.first_name}</TableCell>
@@ -452,15 +452,12 @@ function UsersPanel() {
                     <TableCell>{user.facturation_account || 'N/A'}</TableCell>
                     <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.access_key}</TableCell>
                     <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       <IconButton size="small" onClick={() => handleOpenEditDialog(user)} color="primary">
                         <EditIcon />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleOpenRolesDialog(String(user.id))} color="info">
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleOpenRolesDialog(String(user.id)); }} color="info">
                         <SecurityIcon />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleDeleteUserClick(String(user.id))} color="error">
-                        <DeleteIcon />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -568,6 +565,18 @@ function UsersPanel() {
           </Stack>
         </DialogContent>
         <DialogActions>
+          {isEditMode && (
+            <Button
+              onClick={() => {
+                handleCloseUserDialog();
+                handleDeleteUserClick(String(editingUser?.id));
+              }}
+              color="error"
+            >
+              Delete
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
           <Button onClick={handleCloseUserDialog}>Cancel</Button>
           <Button onClick={handleSaveUser} variant="contained" color="primary">
             {isEditMode ? 'Update User' : 'Create User'}
