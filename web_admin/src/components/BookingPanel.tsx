@@ -22,7 +22,8 @@ import {
   Typography,
 } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiFetch, getCurrentUserId, isAdmin } from '../common';
+import { apiFetch, extractErrorMessage } from '../apiUtils';
+import { getCurrentUserId, isAdmin } from '../common';
 import type { Resource, Session, User } from '../types';
 
 interface BookingForm {
@@ -135,8 +136,8 @@ export default function BookingPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ started_at: fetchInfo.startStr, ended_at: fetchInfo.endStr }),
       })
-        .then((r) => {
-          if (!r.ok) throw new Error('Failed to fetch bookings');
+        .then(async (r) => {
+          if (!r.ok) throw new Error(await extractErrorMessage(r, 'Failed to fetch bookings'));
           return r.json();
         })
         .then((data: { sessions: Session[] }) => {

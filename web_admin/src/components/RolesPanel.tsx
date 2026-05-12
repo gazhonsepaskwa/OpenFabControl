@@ -23,7 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../common';
+import { apiFetch, extractErrorMessage } from '../apiUtils';
 import type { Role } from '../types';
 
 const API_BASE = '/web-admin-api';
@@ -44,7 +44,7 @@ function RolesPanel() {
       const res = await apiFetch(`${API_BASE}/get_role_list`);
 
       if (!res.ok) {
-        throw new Error('Failed to fetch roles');
+        throw new Error(await extractErrorMessage(res, 'Failed to fetch roles'));
       }
 
       const data = await res.json();
@@ -87,7 +87,7 @@ function RolesPanel() {
         setCreateDialogOpen(false);
         await fetchRoles();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to create role';
@@ -116,7 +116,7 @@ function RolesPanel() {
         setDeleteConfirmDialog({ open: false, roleName: '' });
         await fetchRoles();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to delete role';

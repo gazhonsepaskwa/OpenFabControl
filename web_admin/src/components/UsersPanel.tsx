@@ -34,7 +34,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../common';
+import { apiFetch, extractErrorMessage } from '../apiUtils';
 import type { Role, User } from '../types';
 
 const API_BASE = '/web-admin-api';
@@ -65,7 +65,7 @@ function UsersPanel() {
       const res = await apiFetch(`${API_BASE}/get_user_list`);
 
       if (!res.ok) {
-        throw new Error('Failed to fetch users');
+        throw new Error(await extractErrorMessage(res, 'Failed to fetch users'));
       }
 
       const data = await res.json();
@@ -166,7 +166,7 @@ function UsersPanel() {
         setEditingUser(null);
         await fetchUsers();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       console.error(errorMsg, err);
@@ -190,7 +190,7 @@ function UsersPanel() {
         setDeleteConfirmDialog({ open: false, userId: '' });
         await fetchUsers();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to delete user';
@@ -225,14 +225,14 @@ function UsersPanel() {
         const data = await rolesRes.json();
         setUserRoles(data || []);
       } else {
-        throw new Error('Failed to fetch user roles');
+        throw new Error(await extractErrorMessage(rolesRes, 'Failed to fetch user roles'));
       }
 
       if (availableRes.ok) {
         const availableData = await availableRes.json();
         setAvailableRoles(availableData || []);
       } else {
-        throw new Error('Failed to fetch available roles');
+        throw new Error(await extractErrorMessage(availableRes, 'Failed to fetch available roles'));
       }
     } catch (err) {
       const errorMsg = 'Failed to fetch roles';
@@ -269,7 +269,6 @@ function UsersPanel() {
 
       if (res.ok) {
         setSelectedRoleId('');
-        // Refresh user roles
         const rolesRes = await apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -280,7 +279,7 @@ function UsersPanel() {
           setUserRoles(data || []);
         }
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to assign role';
@@ -303,7 +302,6 @@ function UsersPanel() {
       });
 
       if (res.ok) {
-        // Refresh user roles
         const rolesRes = await apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -314,7 +312,7 @@ function UsersPanel() {
           setUserRoles(data || []);
         }
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to remove role';
