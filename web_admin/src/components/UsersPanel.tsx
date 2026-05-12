@@ -120,11 +120,17 @@ function UsersPanel() {
     }
   };
 
+  const isValidEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const validateUserForm = (): string | null => {
     if (!editingUser) return 'No user data';
 
     if (!editingUser.email.trim()) {
       return 'Email cannot be empty';
+    }
+
+    if (!isValidEmail(editingUser.email)) {
+      return 'Please enter a valid email address';
     }
 
     if (!editingUser.access_key.trim()) {
@@ -504,6 +510,12 @@ function UsersPanel() {
               variant="outlined"
               fullWidth
               type="email"
+              error={!!editingUser?.email && !isValidEmail(editingUser.email)}
+              helperText={
+                editingUser?.email && !isValidEmail(editingUser.email)
+                  ? 'Please enter a valid email address'
+                  : undefined
+              }
             />
             <TextField
               label="Access Key"
