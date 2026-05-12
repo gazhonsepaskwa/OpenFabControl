@@ -169,16 +169,14 @@ function DevicesPanel() {
   const filteredNotApprovedDevices = useMemo(() => {
     return notApprovedDevices.filter(
       (device) =>
-        (zoneFilter === 'All' || device.zone === zoneFilter) &&
-        (typeFilter === 'All' || device.type === typeFilter)
+        (zoneFilter === 'All' || device.zone === zoneFilter) && (typeFilter === 'All' || device.type === typeFilter)
     );
   }, [notApprovedDevices, zoneFilter, typeFilter]);
 
   const filteredApprovedDevices = useMemo(() => {
     return approvedDevices.filter(
       (device) =>
-        (zoneFilter === 'All' || device.zone === zoneFilter) &&
-        (typeFilter === 'All' || device.type === typeFilter)
+        (zoneFilter === 'All' || device.zone === zoneFilter) && (typeFilter === 'All' || device.type === typeFilter)
     );
   }, [approvedDevices, zoneFilter, typeFilter]);
 
@@ -384,46 +382,63 @@ function DevicesPanel() {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
+      <Box
+        sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 3 }}
+      >
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 0 }}>
             Devices
           </Typography>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="zone-filter-label">Zone</InputLabel>
-            <Select
-              labelId="zone-filter-label"
-              value={zoneFilter}
-              label="Zone"
-              onChange={(e: SelectChangeEvent) => setZoneFilter(e.target.value)}
-            >
-              {allZones.map((zone) => (
-                <MenuItem key={zone} value={zone}>
-                  {zone}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="type-filter-label">Type</InputLabel>
-            <Select
-              labelId="type-filter-label"
-              value={typeFilter}
-              label="Type"
-              onChange={(e: SelectChangeEvent) => setTypeFilter(e.target.value)}
-            >
-              <MenuItem value="All">All</MenuItem>
-              {allTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel id="zone-filter-label">Zone</InputLabel>
+              <Select
+                labelId="zone-filter-label"
+                value={zoneFilter}
+                label="Zone"
+                onChange={(e: SelectChangeEvent) => setZoneFilter(e.target.value)}
+              >
+                {allZones.map((zone) => (
+                  <MenuItem key={zone} value={zone}>
+                    {zone}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel id="type-filter-label">Type</InputLabel>
+              <Select
+                labelId="type-filter-label"
+                value={typeFilter}
+                label="Type"
+                onChange={(e: SelectChangeEvent) => setTypeFilter(e.target.value)}
+              >
+                <MenuItem value="All">All</MenuItem>
+                {allTypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateDialog}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreateDialog}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+          >
             Create Device
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleOpenCreateDialog}
+            sx={{ display: { xs: 'inline-flex', sm: 'none' }, minWidth: 0, px: 1 }}
+            aria-label="Create Device"
+          >
+            <AddIcon />
           </Button>
           <ToggleButtonGroup
             value={viewMode}

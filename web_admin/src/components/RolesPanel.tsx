@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Alert,
@@ -154,8 +155,21 @@ function RolesPanel() {
             Roles
           </Typography>
         </Badge>
-        <Button variant="contained" onClick={handleOpenCreateDialog}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleOpenCreateDialog}
+          sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+        >
           Create Role
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleOpenCreateDialog}
+          sx={{ display: { xs: 'inline-flex', sm: 'none' }, minWidth: 0, px: 1 }}
+          aria-label="Create Role"
+        >
+          <AddIcon />
         </Button>
       </Box>
       {roles.length === 0 ? (

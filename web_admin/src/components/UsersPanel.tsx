@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
@@ -388,8 +389,21 @@ function UsersPanel() {
               ),
             }}
           />
-          <Button variant="contained" onClick={handleOpenCreateDialog}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreateDialog}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+          >
             Create User
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleOpenCreateDialog}
+            sx={{ display: { xs: 'inline-flex', sm: 'none' }, minWidth: 0, px: 1 }}
+            aria-label="Create User"
+          >
+            <AddIcon />
           </Button>
         </Stack>
       </Box>
