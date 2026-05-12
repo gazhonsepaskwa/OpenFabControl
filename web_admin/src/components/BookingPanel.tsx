@@ -4,6 +4,7 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -20,7 +21,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch, getCurrentUserId, isAdmin } from '../common';
 import type { Resource, Session, User } from '../types';
 
@@ -50,6 +51,8 @@ function statusColor(status: string): string {
   }
 }
 
+const USER_PAGE_SIZE = 20;
+
 export default function BookingPanel() {
   const userIsAdmin = isAdmin();
 
@@ -61,6 +64,32 @@ export default function BookingPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' });
   const calendarRef = useRef<FullCalendar>(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [userPageSize, setUserPageSize] = useState(USER_PAGE_SIZE);
+
+  useEffect(() => {
+    if (dialogOpen) {
+      setUserSearch('');
+      setUserPageSize(USER_PAGE_SIZE);
+    }
+  }, [dialogOpen]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.toLowerCase().trim();
+    const matched = q
+      ? users.filter(
+          (u) => `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+        )
+      : users;
+    const page = matched.slice(0, userPageSize);
+    if (form.user_id) {
+      const selected = users.find((u) => String(u.id) === form.user_id);
+      if (selected && !page.some((u) => u.id === selected.id)) {
+        return [selected, ...page];
+      }
+    }
+    return page;
+  }, [users, userSearch, userPageSize, form.user_id]);
 
   /* Fetch resources once */
   useEffect(() => {
@@ -85,9 +114,12 @@ export default function BookingPanel() {
     (session: Session): string => {
       const resource = resources.find((r) => r.uuid === session.resource_uuid);
       const resourceLabel = resource?.name ?? `${session.resource_uuid.slice(0, 8)}…`;
-      return userIsAdmin ? `${resourceLabel} · #${session.user_id}` : resourceLabel;
+      if (!userIsAdmin) return resourceLabel;
+      const user = users.find((u) => u.id === session.user_id);
+      const userLabel = user ? `${user.first_name} ${user.last_name}` : `#${session.user_id}`;
+      return `${resourceLabel} · ${userLabel}`;
     },
-    [userIsAdmin, resources]
+    [userIsAdmin, resources, users]
   );
 
   /* FullCalendar event-source function – called on every view/navigation change */
@@ -135,12 +167,16 @@ export default function BookingPanel() {
       if (!userIsAdmin && info.dateStr < todayStr) return;
 
       const d = info.dateStr; // YYYY-MM-DD
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startHour = (now.getHours() + 1) % 24;
+      const endHour = (now.getHours() + 2) % 24;
       const currentUserId = getCurrentUserId();
       setEditingSessionId(null);
       setForm({
         resource_uuid: resources[0]?.uuid ?? '',
-        started_at: `${d}T09:00`,
-        ended_at: `${d}T10:00`,
+        started_at: `${d}T${pad(startHour)}:00`,
+        ended_at: `${d}T${pad(endHour)}:00`,
         user_id: currentUserId !== null ? String(currentUserId) : '',
       });
       setDialogOpen(true);
@@ -233,6 +269,32 @@ export default function BookingPanel() {
     setForm((f) => ({ ...f, started_at: newStart, ended_at: newEnd }));
   };
 
+  const handleDelete = async () => {
+    if (editingSessionId === null) return;
+    setSubmitting(true);
+    const endpoint = userIsAdmin ? '/web-admin-api/delete_session' : '/web-user-api/delete_session';
+    try {
+      const res = await apiFetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: editingSessionId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to delete booking');
+      setDialogOpen(false);
+      setSnackbar({ open: true, message: 'Booking deleted successfully!', severity: 'success' });
+      calendarRef.current?.getApi().refetchEvents();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'Failed to delete booking',
+        severity: 'error',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const closeSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
 
   /* True when a non-admin is editing a booking whose start is in the past */
@@ -240,8 +302,8 @@ export default function BookingPanel() {
     !userIsAdmin && editingSessionId !== null && !!form.started_at && new Date(form.started_at) < new Date();
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
+    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Typography variant="h4" component="h1" gutterBottom>
         Booking
       </Typography>
 
@@ -254,17 +316,22 @@ export default function BookingPanel() {
           }}
         />
       )}
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={fetchEvents}
-        dateClick={handleDateClick}
-        eventClick={handleEventClick}
-        headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
-        height="auto"
-        buttonText={{ today: 'Today' }}
-      />
+      <Box sx={{ flex: 1, minHeight: 0 }}>
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          events={fetchEvents}
+          dateClick={handleDateClick}
+          eventClick={handleEventClick}
+          eventDidMount={(info) => {
+            info.el.title = info.event.title;
+          }}
+          headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
+          height="100%"
+          buttonText={{ today: 'Today' }}
+        />
+      </Box>
 
       {/* ── New / Edit Booking dialog ── */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
@@ -272,20 +339,34 @@ export default function BookingPanel() {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             {userIsAdmin && (
-              <FormControl fullWidth required>
-                <InputLabel>User</InputLabel>
-                <Select
-                  label="User"
-                  value={form.user_id}
-                  onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))}
-                >
-                  {users.map((u) => (
-                    <MenuItem key={u.id} value={String(u.id)}>
-                      {u.first_name} {u.last_name} — {u.email}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                options={filteredUsers}
+                getOptionLabel={(u) => `${u.first_name} ${u.last_name} — ${u.email}`}
+                filterOptions={(x) => x}
+                value={users.find((u) => String(u.id) === form.user_id) ?? null}
+                onChange={(_, u) => setForm((f) => ({ ...f, user_id: u ? String(u.id) : '' }))}
+                onInputChange={(_, val, reason) => {
+                  if (reason === 'input') {
+                    setUserSearch(val);
+                    setUserPageSize(USER_PAGE_SIZE);
+                  }
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                ListboxProps={{
+                  onScroll: (e: React.UIEvent<HTMLUListElement>) => {
+                    const el = e.currentTarget;
+                    if (el.scrollHeight - el.scrollTop - el.clientHeight < 50) {
+                      setUserPageSize((p: number) => p + USER_PAGE_SIZE);
+                    }
+                  },
+                }}
+                renderOption={(props, u) => (
+                  <li {...props} key={u.id}>
+                    {u.first_name} {u.last_name} — {u.email}
+                  </li>
+                )}
+                renderInput={(params) => <TextField {...params} label="User" required />}
+              />
             )}
 
             {resources.length > 0 ? (
@@ -332,6 +413,12 @@ export default function BookingPanel() {
           </Stack>
         </DialogContent>
         <DialogActions>
+          {editingSessionId !== null && (
+            <Button onClick={handleDelete} color="error" disabled={submitting}>
+              Delete
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={submitting || isPastBooking}>
             {submitting

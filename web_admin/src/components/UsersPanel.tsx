@@ -1,8 +1,10 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   CircularProgress,
@@ -11,6 +13,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   List,
   ListItem,
   ListItemText,
@@ -25,6 +28,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
@@ -50,6 +54,9 @@ function UsersPanel() {
   const [selectedUserForRoles, setSelectedUserForRoles] = useState<string | null>(null);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -316,6 +323,29 @@ function UsersPanel() {
     }
   };
 
+  const filteredUsers = users.filter((user) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      user.email.toLowerCase().includes(q) ||
+      (user.first_name || '').toLowerCase().includes(q) ||
+      (user.last_name || '').toLowerCase().includes(q)
+    );
+  });
+
+  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(0);
+  };
+
+  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
+
+  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
+  };
+
   if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
@@ -334,87 +364,116 @@ function UsersPanel() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Users
-      </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Total Users ({users.length})</Typography>
-        <Button variant="contained" onClick={handleOpenCreateDialog}>
-          Create User
-        </Button>
+        <Badge badgeContent={filteredUsers.length} color="primary" max={9999}>
+          <Typography variant="h4" component="h1" sx={{ pr: 2 }}>
+            Users
+          </Typography>
+        </Badge>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <TextField
+            size="small"
+            placeholder="Search by name or email"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button variant="contained" onClick={handleOpenCreateDialog}>
+            Create User
+          </Button>
+        </Stack>
       </Box>
 
       {users.length === 0 ? (
         <Typography color="text.secondary">No users available</Typography>
+      ) : filteredUsers.length === 0 ? (
+        <Typography color="text.secondary">No users match your search</Typography>
       ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="users table">
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                <TableCell>
-                  <strong>ID</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Email</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>First Name</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Last Name</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Status</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>TVA</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Facturation Address</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Facturation Account</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Access Key</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Created At</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Actions</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.first_name}</TableCell>
-                  <TableCell>{user.last_name}</TableCell>
-                  <TableCell>{user.status}</TableCell>
-                  <TableCell>{user.tva || 'N/A'}</TableCell>
-                  <TableCell>{user.facturation_address || 'N/A'}</TableCell>
-                  <TableCell>{user.facturation_account || 'N/A'}</TableCell>
-                  <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.access_key}</TableCell>
-                  <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+        <Paper>
+          <TableContainer>
+            <Table sx={{ minWidth: 650 }} aria-label="users table">
+              <TableHead>
+                <TableRow sx={{ backgroundColor: 'action.hover' }}>
                   <TableCell>
-                    <IconButton size="small" onClick={() => handleOpenEditDialog(user)} color="primary">
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleOpenRolesDialog(String(user.id))} color="info">
-                      <SecurityIcon />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleDeleteUserClick(String(user.id))} color="error">
-                      <DeleteIcon />
-                    </IconButton>
+                    <strong>ID</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Email</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>First Name</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Last Name</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Status</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>TVA</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Facturation Address</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Facturation Account</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Access Key</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Created At</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Actions</strong>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {paginatedUsers.map((user) => (
+                  <TableRow key={user.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell>{user.id}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.first_name}</TableCell>
+                    <TableCell>{user.last_name}</TableCell>
+                    <TableCell>{user.status}</TableCell>
+                    <TableCell>{user.tva || 'N/A'}</TableCell>
+                    <TableCell>{user.facturation_address || 'N/A'}</TableCell>
+                    <TableCell>{user.facturation_account || 'N/A'}</TableCell>
+                    <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.access_key}</TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <IconButton size="small" onClick={() => handleOpenEditDialog(user)} color="primary">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleOpenRolesDialog(String(user.id))} color="info">
+                        <SecurityIcon />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleDeleteUserClick(String(user.id))} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredUsers.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+          />
+        </Paper>
       )}
 
       <Snackbar

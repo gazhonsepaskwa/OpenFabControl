@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useEffect, useMemo, useState } from 'react';
+import logoSrc from '../logo.svg';
 import { ADMIN_ROLE_ID, isAdmin } from './common';
 import BookingPanel from './components/BookingPanel';
 import ConfirmEmailPage from './components/ConfirmEmailPage';
@@ -134,13 +135,14 @@ function App() {
       ) : !isLoggedIn ? (
         <LoginPage onLoginSuccess={handleLoginSuccess} />
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
           {/* App bar */}
           <AppBar position="static">
             <Toolbar>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                OpenFabControl
-              </Typography>
+              <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <img src={logoSrc} alt="" style={{ height: 36, filter: themeMode === 'dark' ? 'brightness(0) invert(1)' : undefined }} />
+                <Typography variant="h6" component="div">OpenFabControl</Typography>
+              </Box>
               <IconButton color="inherit" onClick={toggleThemeMode} aria-label="toggle theme">
                 {themeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
@@ -175,7 +177,7 @@ function App() {
 
           {/* Tab content */}
           <Box
-            sx={{ flexGrow: 1, pb: isMobile ? 7 : 0 }}
+            sx={{ flexGrow: 1, minHeight: 0, overflow: 'auto', pb: isMobile ? 7 : 0 }}
             role="tabpanel"
             id={`tabpanel-${tabValue}`}
             aria-labelledby={`tab-${tabValue}`}

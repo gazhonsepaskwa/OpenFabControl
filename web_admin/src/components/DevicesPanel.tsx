@@ -8,6 +8,7 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import ViewListIcon from '@mui/icons-material/ViewList';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Card,
@@ -239,7 +240,7 @@ function DevicesPanel() {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h4" component="h1">
+          <Typography variant="h4" component="h1" gutterBottom>
             Devices
           </Typography>
           <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -277,9 +278,11 @@ function DevicesPanel() {
 
       {/* Unapproved devices */}
       <Box>
-        <Typography variant="h6" gutterBottom>
-          Pending Approval ({filteredNotApprovedDevices.length})
-        </Typography>
+        <Badge badgeContent={filteredNotApprovedDevices.length} color="warning" max={9999} sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ pr: 2 }}>
+            Pending Approval
+          </Typography>
+        </Badge>
         {filteredNotApprovedDevices.length === 0 ? (
           <Typography color="text.secondary">No devices pending approval</Typography>
         ) : viewMode === 'stack' ? (
@@ -313,9 +316,11 @@ function DevicesPanel() {
 
       {/* Approved devices */}
       <Box>
-        <Typography variant="h6" gutterBottom>
-          Approved Devices ({filteredApprovedDevices.length})
-        </Typography>
+        <Badge badgeContent={filteredApprovedDevices.length} color="success" max={9999} sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ pr: 2 }}>
+            Approved Devices
+          </Typography>
+        </Badge>
         {filteredApprovedDevices.length === 0 ? (
           <Typography color="text.secondary">No approved devices</Typography>
         ) : viewMode === 'stack' ? (

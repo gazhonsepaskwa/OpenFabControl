@@ -1,6 +1,7 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   CircularProgress,
@@ -147,11 +148,12 @@ function RolesPanel() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Roles
-      </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Available Roles ({roles.length})</Typography>
+        <Badge badgeContent={roles.length} color="primary" max={9999}>
+          <Typography variant="h4" component="h1" sx={{ pr: 2 }}>
+            Roles
+          </Typography>
+        </Badge>
         <Button variant="contained" onClick={handleOpenCreateDialog}>
           Create Role
         </Button>
@@ -176,7 +178,7 @@ function RolesPanel() {
                 <TableRow key={role.name} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                   <TableCell>{role.name}</TableCell>
                   <TableCell>
-                    <IconButton size="small" onClick={() => handleDeleteRoleClick(role.name)} color="error">
+                    <IconButton size="small" onClick={() => handleDeleteRoleClick(role.name)} color="error" disabled={role.name === 'admin'}>
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
