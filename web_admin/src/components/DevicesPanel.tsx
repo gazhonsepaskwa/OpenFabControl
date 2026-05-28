@@ -1,5 +1,5 @@
 import { SvgIconComponent } from '@mui/icons-material';
-import AddIcon from '@mui/icons-material/Add';
+// import AddIcon from '@mui/icons-material/Add'; // hidden with Create Device button
 import CheckIcon from '@mui/icons-material/Check';
 import CircleIcon from '@mui/icons-material/Circle';
 import CloseIcon from '@mui/icons-material/Close';
@@ -126,15 +126,15 @@ function DeviceCard({ device, onApprove, onUnapprove, onEdit, viewMode }: Device
   );
 }
 
-const BLANK_DEVICE: Resource = {
-  uuid: '',
-  name: '',
-  type: '',
-  zone: '',
-  manual: '',
-  price_booking_in_eur: 0,
-  price_usage_in_eur: 0,
-};
+// const BLANK_DEVICE: Resource = { // hidden with Create Device button
+//   uuid: '',
+//   name: '',
+//   type: '',
+//   zone: '',
+//   manual: '',
+//   price_booking_in_eur: 0,
+//   price_usage_in_eur: 0,
+// };
 
 function DevicesPanel() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -208,11 +208,11 @@ function DevicesPanel() {
 
   const handleCloseSnackbar = () => setSnackbar({ open: false, message: '' });
 
-  const handleOpenCreateDialog = () => {
-    setIsEditMode(false);
-    setEditingDevice({ ...BLANK_DEVICE });
-    setDeviceDialogOpen(true);
-  };
+  // const handleOpenCreateDialog = () => { // hidden with Create Device button
+  //   setIsEditMode(false);
+  //   setEditingDevice({ ...BLANK_DEVICE });
+  //   setDeviceDialogOpen(true);
+  // };
 
   const handleOpenEditDialog = (device: Resource) => {
     setIsEditMode(true);
