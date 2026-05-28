@@ -16,6 +16,7 @@ func Edit_resource(w http.ResponseWriter, r *http.Request) {
 
 	var payload struct {
 		UUID          string `json:"uuid"`
+		TYPE          string `json:"type"`
 		ZONE          string `json:"zone"`
 		NAME          string `json:"name"`
 		MANUAL        string `json:"manual"`
@@ -41,6 +42,10 @@ func Edit_resource(w http.ResponseWriter, r *http.Request) {
 		return ""
 	}
 	i := 0
+	if payload.TYPE != "" {
+		set_close += fmt.Sprint(comma(i), "type = $", i+1)
+		i++
+	}
 	if payload.ZONE != "" {
 		set_close += fmt.Sprint(comma(i), "zone = $", i+1)
 		i++
@@ -71,6 +76,9 @@ func Edit_resource(w http.ResponseWriter, r *http.Request) {
 
 	// build parameters
 	params := []interface{}{}
+	if payload.TYPE != "" {
+		params = append(params, payload.TYPE)
+	}
 	if payload.ZONE != "" {
 		params = append(params, payload.ZONE)
 	}

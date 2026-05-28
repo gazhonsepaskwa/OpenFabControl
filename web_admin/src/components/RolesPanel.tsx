@@ -1,6 +1,8 @@
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   CircularProgress,
@@ -22,7 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../common';
+import { apiFetch, extractErrorMessage } from '../apiUtils';
 import type { Role } from '../types';
 
 const API_BASE = '/web-admin-api';
@@ -43,7 +45,7 @@ function RolesPanel() {
       const res = await apiFetch(`${API_BASE}/get_role_list`);
 
       if (!res.ok) {
-        throw new Error('Failed to fetch roles');
+        throw new Error(await extractErrorMessage(res, 'Failed to fetch roles'));
       }
 
       const data = await res.json();
@@ -86,7 +88,7 @@ function RolesPanel() {
         setCreateDialogOpen(false);
         await fetchRoles();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to create role';
@@ -115,7 +117,7 @@ function RolesPanel() {
         setDeleteConfirmDialog({ open: false, roleName: '' });
         await fetchRoles();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to delete role';
@@ -147,13 +149,27 @@ function RolesPanel() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Roles
-      </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Available Roles ({roles.length})</Typography>
-        <Button variant="contained" onClick={handleOpenCreateDialog}>
+        <Badge badgeContent={roles.length} color="primary" max={9999}>
+          <Typography variant="h4" component="h1" sx={{ pr: 2 }}>
+            Roles
+          </Typography>
+        </Badge>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleOpenCreateDialog}
+          sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+        >
           Create Role
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleOpenCreateDialog}
+          sx={{ display: { xs: 'inline-flex', sm: 'none' }, minWidth: 0, px: 1 }}
+          aria-label="Create Role"
+        >
+          <AddIcon />
         </Button>
       </Box>
       {roles.length === 0 ? (
@@ -176,7 +192,7 @@ function RolesPanel() {
                 <TableRow key={role.name} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                   <TableCell>{role.name}</TableCell>
                   <TableCell>
-                    <IconButton size="small" onClick={() => handleDeleteRoleClick(role.name)} color="error">
+                    <IconButton size="small" onClick={() => handleDeleteRoleClick(role.name)} color="error" disabled={role.name === 'admin'}>
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>

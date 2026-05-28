@@ -4,6 +4,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DevicesIcon from '@mui/icons-material/Devices';
 import LogoutIcon from '@mui/icons-material/Logout';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PeopleIcon from '@mui/icons-material/People';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
@@ -13,6 +14,9 @@ import {
   Box,
   CssBaseline,
   IconButton,
+  ListItemIcon,
+  Menu,
+  MenuItem,
   Paper,
   Tab,
   Tabs,
@@ -22,6 +26,7 @@ import {
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useEffect, useMemo, useState } from 'react';
+import logoSrc from '../logo.svg';
 import { ADMIN_ROLE_ID, isAdmin } from './common';
 import BookingPanel from './components/BookingPanel';
 import ConfirmEmailPage from './components/ConfirmEmailPage';
@@ -34,10 +39,13 @@ import UsersPanel from './components/UsersPanel';
 
 const NAV_ITEMS = [
   { label: 'Users', index: 0, icon: PeopleIcon },
-  { label: 'Roles', index: 1, icon: AdminPanelSettingsIcon },
   // { label: 'Subscriptions', index: 2, icon: SubscriptionsIcon },
   { label: 'Devices', index: 3, icon: DevicesIcon },
   { label: 'Booking', index: 4, icon: CalendarMonthIcon },
+];
+
+const MENU_ITEMS = [
+  { label: 'Roles', index: 1, icon: AdminPanelSettingsIcon },
   { label: 'Settings', index: 5, icon: SettingsIcon },
 ];
 
@@ -71,6 +79,7 @@ function App() {
     const user = userStr ? JSON.parse(userStr) : null;
     return getAccessibleTabs(Array.isArray(user?.roles) ? user.roles : []);
   });
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const stored = localStorage.getItem('themeMode');
     return stored === 'light' || stored === 'dark' ? stored : 'light';
@@ -116,6 +125,19 @@ function App() {
     setIsLoggedIn(true);
   };
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  const handleMenuNavigate = (index: number) => {
+    setTabValue(index);
+    setMenuAnchor(null);
+  };
+
   const handleLogout = () => {
     sessionStorage.clear();
     window.location.reload();
@@ -134,16 +156,45 @@ function App() {
       ) : !isLoggedIn ? (
         <LoginPage onLoginSuccess={handleLoginSuccess} />
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
           {/* App bar */}
           <AppBar position="static">
             <Toolbar>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                OpenFabControl
-              </Typography>
+              <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <img
+                  src={logoSrc}
+                  alt=""
+                  style={{ height: 36, filter: themeMode === 'dark' ? 'brightness(0) invert(1)' : undefined }}
+                />
+                <Typography variant="h6" component="div">
+                  OpenFabControl
+                </Typography>
+              </Box>
               <IconButton color="inherit" onClick={toggleThemeMode} aria-label="toggle theme">
                 {themeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
+              {MENU_ITEMS.some((item) => accessibleTabs.includes(item.index)) && (
+                <IconButton color="inherit" onClick={handleMenuOpen} aria-label="more options">
+                  <MoreVertIcon />
+                </IconButton>
+              )}
+              <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
+                {MENU_ITEMS.filter((item) => accessibleTabs.includes(item.index)).map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <MenuItem
+                      key={item.label}
+                      onClick={() => handleMenuNavigate(item.index)}
+                      selected={tabValue === item.index}
+                    >
+                      <ListItemIcon>
+                        <Icon fontSize="small" />
+                      </ListItemIcon>
+                      {item.label}
+                    </MenuItem>
+                  );
+                })}
+              </Menu>
               <IconButton color="inherit" onClick={handleLogout} aria-label="logout">
                 <LogoutIcon />
               </IconButton>
@@ -175,7 +226,7 @@ function App() {
 
           {/* Tab content */}
           <Box
-            sx={{ flexGrow: 1, pb: isMobile ? 7 : 0 }}
+            sx={{ flexGrow: 1, minHeight: 0, overflow: 'auto', pb: isMobile ? 7 : 0 }}
             role="tabpanel"
             id={`tabpanel-${tabValue}`}
             aria-labelledby={`tab-${tabValue}`}

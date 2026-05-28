@@ -4,6 +4,7 @@ export interface Resource {
   name: string;
   type: string;
   zone: string;
+  manual?: string;
   approved?: boolean;
   price_booking_in_eur?: number;
   price_usage_in_eur?: number;

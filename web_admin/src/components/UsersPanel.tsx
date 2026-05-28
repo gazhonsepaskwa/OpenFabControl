@@ -1,8 +1,11 @@
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   CircularProgress,
@@ -11,6 +14,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   List,
   ListItem,
   ListItemText,
@@ -25,12 +29,13 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../common';
+import { apiFetch, extractErrorMessage } from '../apiUtils';
 import type { Role, User } from '../types';
 
 const API_BASE = '/web-admin-api';
@@ -50,6 +55,9 @@ function UsersPanel() {
   const [selectedUserForRoles, setSelectedUserForRoles] = useState<string | null>(null);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -58,7 +66,7 @@ function UsersPanel() {
       const res = await apiFetch(`${API_BASE}/get_user_list`);
 
       if (!res.ok) {
-        throw new Error('Failed to fetch users');
+        throw new Error(await extractErrorMessage(res, 'Failed to fetch users'));
       }
 
       const data = await res.json();
@@ -113,11 +121,17 @@ function UsersPanel() {
     }
   };
 
+  const isValidEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const validateUserForm = (): string | null => {
     if (!editingUser) return 'No user data';
 
     if (!editingUser.email.trim()) {
       return 'Email cannot be empty';
+    }
+
+    if (!isValidEmail(editingUser.email)) {
+      return 'Please enter a valid email address';
     }
 
     if (!editingUser.access_key.trim()) {
@@ -159,7 +173,7 @@ function UsersPanel() {
         setEditingUser(null);
         await fetchUsers();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       console.error(errorMsg, err);
@@ -183,7 +197,7 @@ function UsersPanel() {
         setDeleteConfirmDialog({ open: false, userId: '' });
         await fetchUsers();
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to delete user';
@@ -218,14 +232,14 @@ function UsersPanel() {
         const data = await rolesRes.json();
         setUserRoles(data || []);
       } else {
-        throw new Error('Failed to fetch user roles');
+        throw new Error(await extractErrorMessage(rolesRes, 'Failed to fetch user roles'));
       }
 
       if (availableRes.ok) {
         const availableData = await availableRes.json();
         setAvailableRoles(availableData || []);
       } else {
-        throw new Error('Failed to fetch available roles');
+        throw new Error(await extractErrorMessage(availableRes, 'Failed to fetch available roles'));
       }
     } catch (err) {
       const errorMsg = 'Failed to fetch roles';
@@ -262,7 +276,6 @@ function UsersPanel() {
 
       if (res.ok) {
         setSelectedRoleId('');
-        // Refresh user roles
         const rolesRes = await apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -273,7 +286,7 @@ function UsersPanel() {
           setUserRoles(data || []);
         }
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to assign role';
@@ -296,7 +309,6 @@ function UsersPanel() {
       });
 
       if (res.ok) {
-        // Refresh user roles
         const rolesRes = await apiFetch(`${API_BASE}/get_user_roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -307,13 +319,36 @@ function UsersPanel() {
           setUserRoles(data || []);
         }
       } else {
-        throw new Error('API call failed');
+        throw new Error(await extractErrorMessage(res, 'API call failed'));
       }
     } catch (err) {
       const errorMsg = 'Failed to remove role';
       console.error(errorMsg, err);
       setSnackbar({ open: true, message: `${errorMsg}: ${err instanceof Error ? err.message : 'Unknown error'}` });
     }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      user.email.toLowerCase().includes(q) ||
+      (user.first_name || '').toLowerCase().includes(q) ||
+      (user.last_name || '').toLowerCase().includes(q)
+    );
+  });
+
+  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(0);
+  };
+
+  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
+
+  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
   };
 
   if (loading) {
@@ -334,87 +369,126 @@ function UsersPanel() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Users
-      </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Total Users ({users.length})</Typography>
-        <Button variant="contained" onClick={handleOpenCreateDialog}>
-          Create User
-        </Button>
+        <Badge badgeContent={filteredUsers.length} color="primary" max={9999}>
+          <Typography variant="h4" component="h1" sx={{ pr: 2 }}>
+            Users
+          </Typography>
+        </Badge>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <TextField
+            size="small"
+            placeholder="Search by name or email"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreateDialog}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+          >
+            Create User
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleOpenCreateDialog}
+            sx={{ display: { xs: 'inline-flex', sm: 'none' }, minWidth: 0, px: 1 }}
+            aria-label="Create User"
+          >
+            <AddIcon />
+          </Button>
+        </Stack>
       </Box>
 
       {users.length === 0 ? (
         <Typography color="text.secondary">No users available</Typography>
+      ) : filteredUsers.length === 0 ? (
+        <Typography color="text.secondary">No users match your search</Typography>
       ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="users table">
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                <TableCell>
-                  <strong>ID</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Email</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>First Name</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Last Name</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Status</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>TVA</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Facturation Address</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Facturation Account</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Access Key</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Created At</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Actions</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.first_name}</TableCell>
-                  <TableCell>{user.last_name}</TableCell>
-                  <TableCell>{user.status}</TableCell>
-                  <TableCell>{user.tva || 'N/A'}</TableCell>
-                  <TableCell>{user.facturation_address || 'N/A'}</TableCell>
-                  <TableCell>{user.facturation_account || 'N/A'}</TableCell>
-                  <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.access_key}</TableCell>
-                  <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+        <Paper>
+          <TableContainer>
+            <Table sx={{ minWidth: 650 }} aria-label="users table">
+              <TableHead>
+                <TableRow sx={{ backgroundColor: 'action.hover' }}>
                   <TableCell>
-                    <IconButton size="small" onClick={() => handleOpenEditDialog(user)} color="primary">
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleOpenRolesDialog(String(user.id))} color="info">
-                      <SecurityIcon />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleDeleteUserClick(String(user.id))} color="error">
-                      <DeleteIcon />
-                    </IconButton>
+                    <strong>ID</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Email</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>First Name</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Last Name</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Status</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>TVA</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Facturation Address</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Facturation Account</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Access Key</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Created At</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Actions</strong>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {paginatedUsers.map((user) => (
+                  <TableRow key={user.id} hover onClick={() => handleOpenEditDialog(user)} sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell>{user.id}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.first_name}</TableCell>
+                    <TableCell>{user.last_name}</TableCell>
+                    <TableCell>{user.status}</TableCell>
+                    <TableCell>{user.tva || 'N/A'}</TableCell>
+                    <TableCell>{user.facturation_address || 'N/A'}</TableCell>
+                    <TableCell>{user.facturation_account || 'N/A'}</TableCell>
+                    <TableCell sx={{ wordBreak: 'break-all', maxWidth: 150 }}>{user.access_key}</TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      <IconButton size="small" onClick={() => handleOpenEditDialog(user)} color="primary">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleOpenRolesDialog(String(user.id)); }} color="info">
+                        <SecurityIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredUsers.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+          />
+        </Paper>
       )}
 
       <Snackbar
@@ -447,6 +521,12 @@ function UsersPanel() {
               variant="outlined"
               fullWidth
               type="email"
+              error={!!editingUser?.email && !isValidEmail(editingUser.email)}
+              helperText={
+                editingUser?.email && !isValidEmail(editingUser.email)
+                  ? 'Please enter a valid email address'
+                  : undefined
+              }
             />
             <TextField
               label="Access Key"
@@ -499,6 +579,18 @@ function UsersPanel() {
           </Stack>
         </DialogContent>
         <DialogActions>
+          {isEditMode && (
+            <Button
+              onClick={() => {
+                handleCloseUserDialog();
+                handleDeleteUserClick(String(editingUser?.id));
+              }}
+              color="error"
+            >
+              Delete
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
           <Button onClick={handleCloseUserDialog}>Cancel</Button>
           <Button onClick={handleSaveUser} variant="contained" color="primary">
             {isEditMode ? 'Update User' : 'Create User'}
