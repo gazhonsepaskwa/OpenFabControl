@@ -424,6 +424,7 @@ function DevicesPanel() {
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Create Device buttons hidden — re-enable when needed
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -440,6 +441,7 @@ function DevicesPanel() {
           >
             <AddIcon />
           </Button>
+          */}
           <ToggleButtonGroup
             value={viewMode}
             exclusive
